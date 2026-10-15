@@ -22,7 +22,6 @@ Atualizar snapshots de template só quando a mudança de texto for intencional: 
 - Textos gerados em pt-BR, sem travessão, sem emoji, sem caixa alta para ênfase.
 - Regras novas: dado em `src/config/vocabulary.ts`, lógica em `src/domain/risks.ts`, teste positivo e negativo.
 - Nunca alterar o texto do analista silenciosamente: alertar, sugerir, e só mudar por ação explícita.
-
 - Visual: Material Design 3 por tokens (`src/ui/styles/tokens.css`). Cor nova entra como token nos temas claro e escuro e em `contrast.test.ts`. Fonte só local (Google Sans Flex em `fonts.css`), sem CDN, sem `@import`, sem `data:`.
 - Movimento só em opacidade e cor, com `prefers-reduced-motion` respeitado. Não adicionar biblioteca de animação (por exemplo `motion`) nem `backdrop-filter`; a skill `apple-design` serve de guia de princípios, não de dependências.
 

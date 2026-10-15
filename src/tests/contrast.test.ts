@@ -5,6 +5,7 @@ type Theme = Record<string, string>;
 const css = readFileSync('src/ui/styles/tokens.css', 'utf8');
 const darkStart = css.indexOf('@media (prefers-color-scheme: dark)');
 const contrastStart = css.indexOf('@media (prefers-contrast: more)');
+if (darkStart < 0 || contrastStart <= darkStart) throw new Error('tokens.css: blocos @media fora da ordem esperada (escuro, depois contraste alto)');
 const parse = (block: string): Theme =>
   Object.fromEntries([...block.matchAll(/--md-sys-color-([\w-]+):\s*(#[0-9a-f]{6})/gi)].map((m) => [m[1]!, m[2]!]));
 const themes: Record<string, Theme> = {
@@ -46,6 +47,11 @@ describe.each(Object.entries(themes))('contraste WCAG 2.1 AA, tema %s', (_name, 
 });
 
 describe('tokens do tema', () => {
+  it('contraste alto troca bordas pela cor do texto', () => {
+    const block = css.slice(contrastStart);
+    expect(block).toMatch(/--md-sys-color-outline:\s*var\(--md-sys-color-on-surface\)/);
+    expect(block).toMatch(/--md-sys-color-outline-variant:\s*var\(--md-sys-color-on-surface-variant\)/);
+  });
   it('claro e escuro definem os mesmos papéis de cor', () => {
     expect(Object.keys(themes.escuro!).sort()).toEqual(Object.keys(themes.claro!).sort());
   });
