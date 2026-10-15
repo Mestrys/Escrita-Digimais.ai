@@ -63,6 +63,9 @@ npm run icons      # regenera os ícones PNG (sem dependências externas)
 npm run audit:deps # npm audit das dependências de produção
 ```
 
+## Integração contínua
+O workflow `.github/workflows/ci.yml` roda a cada pull request e a cada push no `main`: `npm ci`, `npm run check` (lint, typecheck, testes, build e verificação do pacote), `npm audit` das dependências de produção e o empacotamento. O `.zip` da extensão fica disponível como artefato da execução por 14 dias. As actions são fixadas por SHA de commit, e o token tem apenas permissão de leitura.
+
 ## Carregar no Microsoft Edge
 1. Rode `npm run build`.
 2. Abra `edge://extensions`.
@@ -106,7 +109,7 @@ O esquema está em `public/managed-schema.json`. Exemplo de valor para a chave `
 `npm run package` executa build, verificação do pacote e gera um `.zip` de `dist/` em `release/`. A verificação (`scripts/verify-dist.mjs`) falha se encontrar permissões extras, CSP insegura, scripts inline, recursos remotos, `eval`, `new Function`, `fetch`, XHR, WebSocket ou `sendBeacon`.
 
 ## Checklist de publicação e implantação
-- [ ] `npm ci && npm run check` verde em ambiente limpo.
+- [ ] Workflow de CI verde no commit a ser publicado (equivale a `npm ci && npm run check` em ambiente limpo).
 - [ ] `npm audit` sem vulnerabilidades relevantes; atualizações revisadas.
 - [ ] Versão atualizada em `manifest.json` e `package.json`.
 - [ ] Snapshots de template revisados por alguém de comunicação/qualidade.
