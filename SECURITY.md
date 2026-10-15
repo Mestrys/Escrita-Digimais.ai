@@ -29,5 +29,7 @@ Envie um relato privado ao responsável de segurança da sua organização ou ao
 - O teste `manifest.test.ts` falha se surgir biblioteca de rede, analytics ou rastreamento.
 - No CI, as GitHub Actions são fixadas por SHA de commit (não por tag), o token do workflow tem somente `contents: read` e o checkout não persiste credenciais.
 
+- A fonte Google Sans Flex é uma dependência de desenvolvimento (`@fontsource-variable/google-sans-flex`, versão fixa) e vira arquivo local em `assets/`. A CSP não libera `data:` nem hosts externos: a build usa `assetsInlineLimit: 0` e `verify:dist` recusa `data:` em CSS.
+
 ## Segredos
 É proibido versionar segredos, chaves de API, tokens, certificados ou arquivos `.env`. O `.gitignore` bloqueia padrões comuns, e um teste procura formatos conhecidos de chave no código-fonte. A extensão nunca deve pedir chave de API ao usuário.

@@ -75,6 +75,15 @@ O workflow `.github/workflows/ci.yml` roda a cada pull request e a cada push no 
 
 Requer Edge 116 ou superior (API `chrome.sidePanel.open`).
 
+## Design visual
+
+A interface segue o Material Design 3: papéis de cor tonais (tema claro e escuro conforme o sistema), formas, escala tipográfica e estados de interação (hover, foco, pressão). A fonte é a Google Sans Flex (variável, com tamanho óptico), embutida no pacote sob licença SIL OFL 1.1; não há CDN nem Google Fonts em tempo de execução. Sem a fonte, o navegador usa Google Sans, Roboto ou a fonte do sistema.
+
+- Tokens em `src/ui/styles/tokens.css`; estilos em `app.css`; `@font-face` em `fonts.css`.
+- Respeita `prefers-color-scheme`, `prefers-reduced-motion`, `prefers-contrast` e cores forçadas do Windows. O foco por teclado é sempre visível.
+- `src/tests/contrast.test.ts` confere o contraste WCAG AA de todos os pares de cor usados, nos dois temas.
+- Avisos de terceiros em `THIRD-PARTY-NOTICES.md`; a licença da fonte também vai dentro do pacote (`licenses/`).
+
 ## Uso
 1. Escolha o tipo de comunicação e o destinatário (o destinatário aplica nível técnico e formalidade sugeridos, até você alterar manualmente).
 2. Preencha os campos exibidos para o tipo. Campos opcionais ficam em “Campos opcionais”.

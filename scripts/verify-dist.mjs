@@ -38,6 +38,7 @@ for (const f of files) {
       if (/<(?:script|link)[^>]+(?:src|href)=["']https?:/i.test(text)) problems.push(`${f}: recurso remoto`);
       if (/\son\w+=/i.test(text)) problems.push(`${f}: manipulador inline`);
     }
+    if (/\.css$/.test(f) && /url\(\s*['"]?data:/i.test(text)) problems.push(`${f}: data: URI em CSS (a CSP não permite)`);
     if (/\.(js|css)$/.test(f) && /(?:src|href|url)\(?\s*=?\s*["']https?:\/\/(?!www\.w3\.org|react\.dev|reactjs\.org)/.test(text)) {
       problems.push(`${f}: possível recurso remoto`);
     }

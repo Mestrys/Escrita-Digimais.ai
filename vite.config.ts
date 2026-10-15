@@ -14,6 +14,8 @@ export default defineConfig({
     target: 'es2022',
     sourcemap: false,
     modulePreload: { polyfill: false },
+    // Sem data: URIs (a CSP não permite data: em font-src/img-src): toda fonte e imagem vira arquivo em assets/.
+    assetsInlineLimit: 0,
     rollupOptions: {
       input: {
         sidepanel: new URL('./sidepanel.html', import.meta.url).pathname,
