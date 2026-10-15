@@ -11,7 +11,8 @@ Extensão MV3 para Microsoft Edge que gera sugestões de texto para chamados de 
 
 ## Comandos de verificação
 ```
-npm run check        # lint + typecheck + testes + build + verify:dist
+npm run check        # lint + typecheck + testes + build + verify:dist + build:dev
+npm run dev          # dist-dev/ em modo watch para carregar no Edge (docs/DESENVOLVIMENTO-EDGE.md)
 npm test             # Vitest (jsdom, Testing Library, axe-core)
 npm run package      # gera release/*.zip
 ```
