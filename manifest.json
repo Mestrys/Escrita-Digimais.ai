@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "Assistente de Textos do Service Desk",
+  "short_name": "Textos Service Desk",
+  "version": "0.1.0",
+  "description": "Auxilia analistas a redigir textos claros e cordiais para chamados. Funciona localmente, sem enviar dados.",
+  "minimum_chrome_version": "116",
+  "icons": { "16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png", "128": "icons/icon128.png" },
+  "action": {
+    "default_title": "Assistente de Textos do Service Desk",
+    "default_popup": "popup.html",
+    "default_icon": { "16": "icons/icon16.png", "32": "icons/icon32.png" }
+  },
+  "side_panel": { "default_path": "sidepanel.html" },
+  "background": { "service_worker": "background.js", "type": "module" },
+  "permissions": ["sidePanel", "storage"],
+  "storage": { "managed_schema": "managed-schema.json" },
+  "content_security_policy": {
+    "extension_pages": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+  }
+}

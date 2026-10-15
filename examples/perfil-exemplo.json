@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "profileVersion": "1.0.0",
+  "organizationName": "Organização Exemplo",
+  "signature": "Equipe de Service Desk da {organization}",
+  "closings": {
+    "cordial": ["Agradecemos a colaboração.", "Obrigado pela atenção."],
+    "formal": ["Atenciosamente,"],
+    "direct": ["Obrigado."]
+  },
+  "forbiddenTerms": ["conforme já informado", "como você deveria", "falha humana", "não é de nossa responsabilidade", "o quanto antes", "sem mais"],
+  "requiredTexts": [
+    { "text": "Este atendimento segue a política de atendimento da organização.", "types": ["closure_resolved", "closure_no_response"] }
+  ],
+  "maxLength": 3000,
+  "closureRules": {
+    "noResponseEnabled": true,
+    "minAttempts": 3,
+    "requirePriorNotice": true,
+    "minDaysAfterNotice": 2,
+    "reopenInstruction": "Se precisar de apoio novamente, entre em contato conosco."
+  },
+  "knownAcronyms": ["TI", "PDF", "USB", "PC", "SMS", "CPF", "CNPJ", "CEP", "RH", "OK", "ID", "VPN"],
+  "internalDomains": ["exemplo.test"]
+}
