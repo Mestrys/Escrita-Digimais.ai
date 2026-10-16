@@ -25,6 +25,7 @@ export const FIELD_META: Record<ContextField, FieldMeta> = {
   userConfirmation: { label: 'Confirmação do usuário', kind: 'select' },
   destinationTeam: { label: 'Equipe de destino', kind: 'text' },
   escalationReason: { label: 'Motivo funcional do encaminhamento', hint: 'Por que outra equipe deve assumir, sem detalhes internos desnecessários.', kind: 'textarea', rows: 2 },
+  requesterName: { label: 'Nome de quem recebe (opcional)', hint: 'Usado só na saudação. O primeiro nome basta.', kind: 'text' },
   freeIntent: { label: 'Mensagem principal', hint: 'Escreva a frase principal como deve aparecer no texto. Ela é usada exatamente como informada.', kind: 'textarea', rows: 3 },
 };
 
@@ -39,7 +40,7 @@ interface TypeFields {
 export const TYPE_FIELDS: Record<CommunicationType, TypeFields> = {
   request_information: {
     main: ['summary', 'questions', 'expectedAction', 'explicitDeadline'],
-    advanced: ['actions', 'evidence', 'notes'],
+    advanced: ['requesterName', 'actions', 'evidence', 'notes'],
     overrides: {
       summary: { label: 'Por que a informação é necessária', hint: 'Contexto resumido do chamado e motivo do pedido.' },
       actions: { label: 'Ações já realizadas', hint: 'Evita pedir novamente algo já disponível.' },
@@ -52,26 +53,26 @@ export const TYPE_FIELDS: Record<CommunicationType, TypeFields> = {
   },
   pending: {
     main: ['pendingItem', 'expectedAction', 'summary', 'explicitDeadline'],
-    advanced: ['actions', 'observedResult', 'evidence', 'notes'],
+    advanced: ['requesterName', 'actions', 'observedResult', 'evidence', 'notes'],
     overrides: { expectedAction: { label: 'Ação esperada e próximo passo' } },
   },
   manager_approval: {
     main: ['approvalObject', 'summary', 'approvalEffect', 'explicitDeadline'],
-    advanced: ['actions', 'expectedAction', 'evidence', 'notes'],
+    advanced: ['requesterName', 'actions', 'expectedAction', 'evidence', 'notes'],
     overrides: { summary: { label: 'Justificativa', hint: 'Por que a aprovação é necessária.' } },
   },
   progress_update: {
     main: ['summary', 'actions', 'observedResult', 'pendingItem', 'expectedAction', 'explicitDeadline'],
-    advanced: ['evidence', 'notes'],
+    advanced: ['requesterName', 'evidence', 'notes'],
   },
   solution_confirmation: {
     main: ['summary', 'actions', 'observedResult', 'expectedAction', 'explicitDeadline'],
-    advanced: ['evidence', 'notes'],
+    advanced: ['requesterName', 'evidence', 'notes'],
     overrides: { observedResult: { label: 'Resultado observado após as ações' } },
   },
   closure_resolved: {
     main: ['summary', 'actions', 'observedResult', 'userConfirmation'],
-    advanced: ['pendingItem', 'evidence', 'notes'],
+    advanced: ['requesterName', 'pendingItem', 'evidence', 'notes'],
     overrides: {
       observedResult: { label: 'Resultado validado', hint: 'Evidência de que a situação foi resolvida. Tentativas e orientações não bastam.' },
       pendingItem: { label: 'Pendência atual (deve estar vazia para encerrar)' },
@@ -79,7 +80,7 @@ export const TYPE_FIELDS: Record<CommunicationType, TypeFields> = {
   },
   closure_no_response: {
     main: ['summary', 'pendingItem', 'contactAttempts', 'priorNoticeDate'],
-    advanced: ['notes'],
+    advanced: ['requesterName', 'notes'],
     overrides: {
       summary: { label: 'Solicitação original do chamado' },
       pendingItem: { label: 'Informação aguardada do usuário' },
@@ -87,7 +88,7 @@ export const TYPE_FIELDS: Record<CommunicationType, TypeFields> = {
   },
   redirect_or_escalate: {
     main: ['destinationTeam', 'escalationReason', 'summary', 'actions', 'observedResult', 'expectedAction', 'explicitDeadline'],
-    advanced: ['pendingItem', 'evidence', 'notes'],
+    advanced: ['requesterName', 'pendingItem', 'evidence', 'notes'],
     overrides: {
       actions: { label: 'Verificações já realizadas' },
       expectedAction: { label: 'Continuidade esperada' },
@@ -95,7 +96,7 @@ export const TYPE_FIELDS: Record<CommunicationType, TypeFields> = {
   },
   guided_free_text: {
     main: ['freeIntent', 'summary', 'actions', 'observedResult', 'pendingItem', 'expectedAction', 'explicitDeadline'],
-    advanced: ['evidence', 'notes'],
+    advanced: ['requesterName', 'evidence', 'notes'],
   },
 };
 
@@ -117,4 +118,5 @@ export const RECIPIENT_LABELS = {
 
 export const TECH_LEVEL_LABELS = { simple: 'Simples', balanced: 'Equilibrado', technical: 'Técnico' } as const;
 export const FORMALITY_LABELS = { cordial: 'Cordial', formal: 'Formal', direct: 'Direto respeitoso' } as const;
+export const TEXT_STYLE_LABELS = { natural: 'Natural', structured: 'Estruturada' } as const;
 export const LENGTH_LABELS = { short: 'Curto', standard: 'Padrão', detailed: 'Detalhado' } as const;

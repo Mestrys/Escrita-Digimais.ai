@@ -4,8 +4,8 @@ import { AUTO_CLEAR_OPTIONS } from '../../application/preferences';
 import type { Preferences } from '../../application/preferences';
 import type { ProfileOverlay } from '../../config/profile-overlay';
 import type { UsagePolicy } from '../../application/usage-counters';
-import { FORMALITY_LABELS, LENGTH_LABELS, TECH_LEVEL_LABELS } from '../../config/fields';
-import { FORMALITIES, LENGTHS, TECH_LEVELS } from '../../domain/types';
+import { FORMALITY_LABELS, LENGTH_LABELS, TECH_LEVEL_LABELS, TEXT_STYLE_LABELS } from '../../config/fields';
+import { FORMALITIES, LENGTHS, TECH_LEVELS, TEXT_STYLES } from '../../domain/types';
 import type { LanguageProfile } from '../../domain/types';
 
 interface Props {
@@ -98,6 +98,12 @@ export function SettingsPanel({
           <label htmlFor="pref-length">Tamanho padrão</label>
           <select id="pref-length" value={prefs.length} onChange={(e) => onPrefs({ length: e.target.value as Preferences['length'] })}>
             {LENGTHS.map((v) => <option key={v} value={v}>{LENGTH_LABELS[v]}</option>)}
+          </select>
+        </div>
+        <div className="field">
+          <label htmlFor="pref-style">Redação padrão</label>
+          <select id="pref-style" value={prefs.textStyle} onChange={(e) => onPrefs({ textStyle: e.target.value as Preferences['textStyle'] })}>
+            {TEXT_STYLES.map((v) => <option key={v} value={v}>{TEXT_STYLE_LABELS[v]}</option>)}
           </select>
         </div>
         <div className="field">

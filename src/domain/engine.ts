@@ -3,13 +3,15 @@ import { ENGINE_ID, MAX_FIELD_CHARS, MAX_LIST_ITEMS, MAX_TOTAL_CHARS, TEMPLATES_
 import { resolveTemplates } from '../config/templates';
 import { classifyContext } from './classify';
 import { normalizeContext, totalChars } from './normalize';
-import { buildPlan } from './planner';
+import { buildPlan, isNaturalStyle } from './planner';
 import { checkPolicy } from './policy';
 import { dedupeWarnings, scoreQuality, sortWarnings } from './quality';
 import { renderPlan } from './renderer';
 import { findingsToWarnings, reviewText } from './review';
 import { maskContext, scanContext } from './sensitive';
 import { evaluateSufficiency, recommendedWarnings } from './sufficiency';
+import { dedupeChanges, toTeamVoice } from './voice';
+import type { VoiceChange } from './voice';
 import type {
   BlockReason,
   ContextField,
@@ -142,6 +144,17 @@ export function generate(
   }
 
   // 5. Planejamento e renderização
+  const voiceChanges: VoiceChange[] = [];
+  if (isNaturalStyle(settings, profile)) {
+    const convert = (text: string): string => {
+      const out = toTeamVoice(text);
+      voiceChanges.push(...out.changes);
+      return out.text;
+    };
+    classified.actionsDone = classified.actionsDone.map(convert);
+    classified.actionsPlanned = classified.actionsPlanned.map(convert);
+    if (classified.observedResult) classified.observedResult = convert(classified.observedResult);
+  }
   const plan = buildPlan(settings, classified, profile, resolveTemplates(profile.templates));
   const text = renderPlan(plan);
 
@@ -161,8 +174,21 @@ export function generate(
     { skipSensitive: true },
   );
 
+  const changes = dedupeChanges(voiceChanges);
+  const voiceWarnings: Warning[] = changes.length
+    ? [
+        {
+          code: 'voice_adjusted',
+          severity: 'info',
+          message: `A pessoa verbal foi ajustada para a voz da equipe: ${changes.map((c) => `"${c.from}" para "${c.to}"`).join('; ')}.`,
+          suggestion: 'Confira se continua fiel ao que foi feito. Para manter exatamente as suas palavras, use o estilo Estruturado.',
+          dimension: 'clarity',
+          penalty: 0,
+        },
+      ]
+    : [];
   const warnings = sortWarnings(
-    dedupeWarnings([...sensitiveWarnings, ...policy.warnings, ...recommendedWarnings(sufficiency), ...review.warnings]),
+    dedupeWarnings([...sensitiveWarnings, ...policy.warnings, ...recommendedWarnings(sufficiency), ...voiceWarnings, ...review.warnings]),
   );
   if (warnings.some((w) => w.severity === 'block')) {
     return blocked('unsafe_content', warnings, profile, { sensitiveFindings: findings });

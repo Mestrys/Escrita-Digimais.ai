@@ -103,6 +103,7 @@ A interface segue o Material Design 3: papéis de cor tonais (tema claro e escur
 - Proteção da `main` e demais ajustes de administração: [docs/GOVERNANCA.md](docs/GOVERNANCA.md).
 
 ## Uso
+0. **Redação natural (padrão para texto a pessoas)**: o texto usa frases de ligação, fala em nome da equipe ("resetei" vira "resetamos", por lista fechada de verbos, com alerta informativo do que mudou) e pode saudar pelo primeiro nome. O estilo **Estruturada** mantém rótulos fixos e as suas palavras exatamente como digitadas. Notas técnicas e textos para equipe técnica ou fornecedor não mudam.
 1. Escolha o tipo de comunicação e o destinatário (o destinatário aplica nível técnico e formalidade sugeridos, até você alterar manualmente).
 2. Preencha os campos exibidos para o tipo. Campos opcionais ficam em “Campos opcionais”.
 3. Confira o painel “Possíveis dados sensíveis”. Credenciais bloqueiam a geração. Outros dados podem ser substituídos por marcador com um clique (e desfeitos).

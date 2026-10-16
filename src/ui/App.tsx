@@ -12,7 +12,7 @@ import type { ReviewFormState } from '../application/review-form';
 import { createProvider, DISABLED_AI_POLICY, generateWithFallback } from '../application/provider';
 import type { AiPolicy, TextGenerationProvider } from '../application/provider';
 import {
-  FIELD_META, fieldHint, fieldLabel, FORMALITY_LABELS, LENGTH_LABELS, RECIPIENT_LABELS, TECH_LEVEL_LABELS, TYPE_FIELDS,
+  FIELD_META, fieldHint, fieldLabel, FORMALITY_LABELS, LENGTH_LABELS, RECIPIENT_LABELS, TECH_LEVEL_LABELS, TEXT_STYLE_LABELS, TYPE_FIELDS,
 } from '../config/fields';
 import { DEFAULT_PROFILE } from '../config/language-profile';
 import { exportProfileJson } from '../config/profile-schema';
@@ -23,7 +23,7 @@ import { reviewText } from '../domain/review';
 import type { ReviewResult } from '../domain/review';
 import { scanText } from '../domain/sensitive';
 import { SUFFICIENCY_MATRIX } from '../domain/sufficiency';
-import { COMMUNICATION_TYPES, FORMALITIES, LENGTHS, RECIPIENTS, TECH_LEVELS } from '../domain/types';
+import { COMMUNICATION_TYPES, FORMALITIES, LENGTHS, RECIPIENTS, TECH_LEVELS, TEXT_STYLES } from '../domain/types';
 import type {
   CommunicationType, ContextField, GenerationResult, LanguageProfile, QualityScore, SensitiveFinding, Warning,
 } from '../domain/types';
@@ -142,7 +142,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
       setSigningKeys(keys);
       setOverlay(ov);
       setUsagePolicy(usagePol);
-      setForm((f) => ({ ...f, techLevel: p.techLevel, formality: p.formality, length: p.length }));
+      setForm((f) => ({ ...f, techLevel: p.techLevel, formality: p.formality, length: p.length, textStyle: p.textStyle }));
     })();
     return () => {
       alive = false;
@@ -299,7 +299,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     touch();
   };
 
-  const setStyle = (name: 'techLevel' | 'formality' | 'length', value: string): void => {
+  const setStyle = (name: 'techLevel' | 'formality' | 'length' | 'textStyle', value: string): void => {
     touched.current.add(name);
     setForm((f) => ({ ...f, [name]: value }));
     touch();
@@ -697,6 +697,12 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
               <label htmlFor="length">Tamanho</label>
               <select id="length" value={form.length} onChange={(e) => setStyle('length', e.target.value)}>
                 {LENGTHS.map((v) => <option key={v} value={v}>{LENGTH_LABELS[v]}</option>)}
+              </select>
+            </div>
+            <div className="field">
+              <label htmlFor="textStyle">Redação</label>
+              <select id="textStyle" value={form.textStyle} onChange={(e) => setStyle('textStyle', e.target.value)}>
+                {TEXT_STYLES.map((v) => <option key={v} value={v}>{TEXT_STYLE_LABELS[v]}</option>)}
               </select>
             </div>
           </div>

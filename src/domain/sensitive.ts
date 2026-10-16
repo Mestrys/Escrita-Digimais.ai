@@ -437,7 +437,7 @@ export function scanText(text: string, options: ScanOptions = {}): SensitiveFind
 
 const SCANNED_FIELDS: ContextField[] = [
   'summary', 'observedResult', 'pendingItem', 'expectedAction', 'explicitDeadline', 'notes', 'approvalObject',
-  'approvalEffect', 'destinationTeam', 'escalationReason', 'freeIntent',
+  'approvalEffect', 'destinationTeam', 'escalationReason', 'freeIntent', 'requesterName',
 ];
 const SCANNED_LIST_FIELDS: ContextField[] = ['actions', 'evidence', 'questions'];
 

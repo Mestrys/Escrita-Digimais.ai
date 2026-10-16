@@ -29,15 +29,13 @@ exports[`regressão dos templates (padrão, cordial) > closure_resolved 1`] = `
 
 Estamos encerrando este chamado com a situação solucionada, conforme descrito abaixo.
 
-Contexto: Impressora não imprimia.
+Resumo da situação: Impressora não imprimia.
 
-Ações realizadas: Reinstalado o driver da impressora.
+Até aqui, reinstalamos o driver da impressora.
 
 Resultado validado: Página de teste impressa e confirmada no equipamento.
 
 O usuário confirmou a solução.
-
-O chamado foi encerrado com base no resultado descrito acima.
 
 Se precisar de apoio novamente, entre em contato conosco.
 
@@ -50,7 +48,7 @@ exports[`regressão dos templates (padrão, cordial) > guided_free_text 1`] = `
 
 O atendimento presencial foi agendado.
 
-Contexto: Troca de equipamento solicitada.
+Resumo da situação: Troca de equipamento solicitada.
 
 Agradecemos a colaboração.
 Equipe de Service Desk"
@@ -78,11 +76,9 @@ exports[`regressão dos templates (padrão, cordial) > pending 1`] = `
 
 O atendimento permanece pendente. Seguem os detalhes.
 
-Pendência: Envio da planilha corrigida pelo usuário.
+O que ainda está pendente: Envio da planilha corrigida pelo usuário.
 
-Pendente com: usuário
-
-Ação esperada: Enviar o arquivo atualizado.
+O que precisamos de você: Enviar o arquivo atualizado.
 
 Aguardamos a conclusão do item acima para seguirmos com o atendimento.
 
@@ -95,13 +91,13 @@ exports[`regressão dos templates (padrão, cordial) > progress_update 1`] = `
 
 Passamos para informar o andamento do seu chamado.
 
-Contexto: Lentidão ao abrir o sistema.
+Resumo da situação: Lentidão ao abrir o sistema.
 
-Ações realizadas: Limpeza do cache do navegador.
+O que já fizemos: Limpeza do cache do navegador.
 
-Resultado observado: A lentidão diminuiu parcialmente.
+O que observamos: A lentidão diminuiu parcialmente.
 
-Pendência: Acompanhar o comportamento por dois dias.
+O que ainda está pendente: Acompanhar o comportamento por dois dias.
 
 Agradecemos a colaboração.
 Equipe de Service Desk"
@@ -114,7 +110,7 @@ Para que a análise tenha continuidade, estamos encaminhando este atendimento. D
 
 Motivo do encaminhamento: A análise exige acesso administrativo ao ambiente de armazenamento.
 
-Verificações já realizadas: Validadas as permissões do usuário.
+Até aqui, validamos as permissões do usuário.
 
 O atendimento seguirá com a equipe indicada.
 
@@ -127,9 +123,9 @@ exports[`regressão dos templates (padrão, cordial) > request_information 1`] =
 
 Para continuarmos a análise, precisamos de algumas informações.
 
-Contexto: Usuária relata erro ao abrir a planilha de custos.
+Resumo da situação: Usuária relata erro ao abrir a planilha de custos.
 
-Informações necessárias:
+Para avançarmos, precisamos saber:
 1. Qual mensagem de erro aparece na tela?
 2. O erro ocorre com outros arquivos?
 
@@ -148,11 +144,11 @@ exports[`regressão dos templates (padrão, cordial) > solution_confirmation 1`]
 
 Realizamos as ações descritas abaixo e gostaríamos de confirmar se a situação foi resolvida.
 
-Contexto: Impressora não imprimia.
+Resumo da situação: Impressora não imprimia.
 
-Ações realizadas: Reinstalado o driver da impressora.
+Até aqui, reinstalamos o driver da impressora.
 
-Resultado observado: Página de teste impressa.
+O que observamos: Página de teste impressa.
 
 A sua confirmação nos permitirá registrar o resultado do atendimento.
 

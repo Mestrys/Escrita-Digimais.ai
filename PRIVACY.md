@@ -16,7 +16,8 @@ O processamento é local e determinístico. Os dados sensíveis detectados são 
 
 ## O que é armazenado
 Somente em `chrome.storage.local`, neste navegador:
-- **Preferências**: nível técnico, formalidade, tamanho padrão e tempo de limpeza automática.
+- **Preferências**: nível técnico, formalidade, tamanho padrão, estilo de redação (natural ou estruturada) e tempo de limpeza automática.
+- O **nome de quem recebe** o texto (campo opcional) é usado só na saudação, passa pela detecção de dados sensíveis e nunca é gravado.
 - **Perfil de linguagem importado** (opcional): textos institucionais validados, sem dados de chamados. Quando a organização exige assinatura, guarda também o valor da assinatura (texto, sem dados pessoais).
 - **Camada da equipe** (opcional): regras restritivas validadas (termos, limites), sem dados de chamados.
 - **Contadores de uso** (opcional, desligados por padrão): números inteiros por categoria de uma lista fechada, mais a data em que a contagem começou. O arquivo exportado inclui também o dia da exportação, gerado no momento de exportar e não guardado.

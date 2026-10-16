@@ -24,6 +24,10 @@ export type Formality = (typeof FORMALITIES)[number];
 export const LENGTHS = ['short', 'standard', 'detailed'] as const;
 export type LengthMode = (typeof LENGTHS)[number];
 
+export const TEXT_STYLES = ['natural', 'structured'] as const;
+/** Natural: frases de ligação e voz da equipe. Estruturado: rótulos fixos, como nas versões anteriores. */
+export type TextStyle = (typeof TEXT_STYLES)[number];
+
 export type UserConfirmation = 'yes' | 'no' | 'unknown';
 
 export interface TicketContext {
@@ -46,6 +50,8 @@ export interface TicketContext {
   destinationTeam?: string;
   escalationReason?: string;
   freeIntent?: string;
+  /** Nome de quem recebe o texto. Usado somente na saudação. */
+  requesterName?: string;
 }
 export type ContextField = keyof TicketContext;
 
@@ -57,6 +63,8 @@ export interface GenerationSettings {
   length: LengthMode;
   /** Índice de variação controlada dos templates (determinístico). */
   variant?: number;
+  /** Padrão: natural. */
+  style?: TextStyle;
 }
 
 export interface GenerationInput {

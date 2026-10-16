@@ -1,11 +1,12 @@
 import { BLUEPRINTS, RECORD_SKIPPED, includedAt, isRecordStyle } from '../config/blueprints';
 import type { SectionKind } from '../config/blueprints';
-import { FIXED_PHRASES, LABEL_OVERRIDES } from '../config/templates';
+import { FIXED_PHRASES, LABEL_OVERRIDES, NATURAL_EXPECTED_ACTION, NATURAL_LEADS } from '../config/templates';
 import type { ResolvedTemplates } from '../config/templates';
 import type { ClassifiedContext } from './classify';
-import { capitalizeFirst, ensureQuestion, ensureTerminalPunctuation, stripTerminalPunctuation } from './text-utils';
+import { capitalizeFirst, ensureQuestion, ensureTerminalPunctuation, lowerFirst, stripTerminalPunctuation } from './text-utils';
 import type { GenerationSettings, LabelKey, LanguageProfile } from './types';
 import { isoToBr } from './validators';
+import { startsWithTeamVerb } from './voice';
 
 /**
  * Planejamento da mensagem: decide quais seções existem e com qual conteúdo.
@@ -64,6 +65,50 @@ export function variantIndexes(variant: number, sizes: readonly number[]): numbe
   });
 }
 
+/** Natural vale para textos a pessoas, sem rótulos próprios da organização e sem pedido do estilo estruturado. */
+export function isNaturalStyle(settings: GenerationSettings, profile: LanguageProfile): boolean {
+  if ((settings.style ?? 'natural') !== 'natural') return false;
+  if (isRecordStyle(settings.type, settings.recipient)) return false;
+  if (settings.recipient !== 'user' && settings.recipient !== 'manager' && settings.recipient !== 'other') return false;
+  return Object.keys(profile.templates.labels ?? {}).length === 0;
+}
+
+const NAME_PATTERN = /^[\p{L}][\p{L}\p{M}'’-]{0,39}$/u;
+const GREETING_WITH_NAME = /^(Olá|Prezado\(a\)|Prezada|Prezado),$/u;
+
+/** Primeiro nome válido para a saudação, ou undefined (nunca monta saudação com texto estranho). */
+export function greetingName(raw: string | undefined): string | undefined {
+  const first = raw?.trim().split(/\s+/u)[0];
+  return first && NAME_PATTERN.test(first) ? capitalizeFirst(first) : undefined;
+}
+
+function greetWithName(base: string, name: string | undefined): string {
+  const m = name ? GREETING_WITH_NAME.exec(base) : null;
+  if (!m || !name) return base;
+  return m[1] === 'Olá' ? `Olá, ${name},` : `${m[1]} ${name},`;
+}
+
+const INFINITIVE = /^[\p{L}]{4,}(?:ar|er|ir)$/u;
+
+function joinClauses(parts: string[]): string {
+  if (parts.length <= 1) return parts[0] ?? '';
+  return `${parts.slice(0, -1).join(', ')} e ${parts[parts.length - 1]}`;
+}
+
+/** Frase corrida quando todas as ações começam com verbo da equipe; senão undefined (cai na lista). */
+function flowingActions(items: string[], planned: boolean, variant: number): string | undefined {
+  if (items.length === 0 || items.length > 3) return undefined;
+  const clauses: string[] = [];
+  for (const raw of items) {
+    const item = stripTerminalPunctuation(raw);
+    if (startsWithTeamVerb(item)) clauses.push(lowerFirst(item));
+    else if (planned && INFINITIVE.test(item.split(/\s+/u)[0] ?? '')) clauses.push(`vamos ${lowerFirst(item)}`);
+    else return undefined;
+  }
+  const leads = planned ? ['Em seguida, ', 'Na sequência, '] : ['Até aqui, ', 'Nesta etapa, '];
+  return `${leads[Math.abs(variant) % leads.length]}${joinClauses(clauses)}.`;
+}
+
 function sentence(text: string): string {
   return ensureTerminalPunctuation(capitalizeFirst(text));
 }
@@ -90,12 +135,24 @@ export function buildPlan(
   ]);
   const record = isRecordStyle(type, recipient);
   const vars = { organization: profile.organizationName, destination: c.destinationTeam ?? '' };
+  const natural = isNaturalStyle(settings, profile);
   const labels = { ...templates.labels[techLevel], ...(LABEL_OVERRIDES[type] ?? {}) };
+  if (natural) {
+    const base = templates.labels[techLevel];
+    const overrides = LABEL_OVERRIDES[type] ?? {};
+    for (const [key, pool] of Object.entries(NATURAL_LEADS) as [LabelKey, readonly string[]][]) {
+      const override = overrides[key];
+      if (override === undefined || override === base[key]) labels[key] = pick(pool, variant) ?? labels[key];
+    }
+    if (overrides.expected_action === undefined) {
+      labels.expected_action = pick(NATURAL_EXPECTED_ACTION[recipient === 'manager' ? 'manager' : 'person'], variant) ?? labels.expected_action;
+    }
+  }
 
-  const content = (kind: SectionKind): Pick<PlannedSection, 'text' | 'items'> | undefined => {
+  const content = (kind: SectionKind): (Pick<PlannedSection, 'text' | 'items'> & { flowing?: boolean }) | undefined => {
     switch (kind) {
       case 'greeting':
-        return { text: profile.greetings[formality][recipient] };
+        return { text: natural ? greetWithName(profile.greetings[formality][recipient], greetingName(c.requesterName)) : profile.greetings[formality][recipient] };
       case 'opening': {
         const t = pick(openingPool, openingIdx);
         return t ? { text: fillPlaceholders(t, vars) } : undefined;
@@ -105,16 +162,23 @@ export function buildPlan(
       case 'context':
       case 'justification':
         return c.summary ? { text: sentence(c.summary) } : undefined;
-      case 'actions_done':
-        return c.actionsDone.length ? { items: c.actionsDone.map(sentence) } : undefined;
-      case 'actions_planned':
-        return c.actionsPlanned.length ? { items: c.actionsPlanned.map(sentence) } : undefined;
+      case 'actions_done': {
+        if (!c.actionsDone.length) return undefined;
+        const flow = natural ? flowingActions(c.actionsDone, false, variant) : undefined;
+        return flow ? { text: flow, flowing: true } : { items: c.actionsDone.map(sentence) };
+      }
+      case 'actions_planned': {
+        if (!c.actionsPlanned.length) return undefined;
+        const flow = natural ? flowingActions(c.actionsPlanned, true, variant) : undefined;
+        return flow ? { text: flow, flowing: true } : { items: c.actionsPlanned.map(sentence) };
+      }
       case 'result':
         return c.observedResult ? { text: sentence(c.observedResult) } : undefined;
       case 'pending':
         return c.pendingItem ? { text: sentence(c.pendingItem) } : undefined;
       case 'depends_on':
-        return recipient === 'other' ? undefined : { text: profile.recipients[recipient].displayName };
+        // Ao escrever para o próprio usuário, "Pendente com: usuário" soa estranho; "O que precisamos de você" já diz isso.
+        return recipient === 'other' || (natural && recipient === 'user') ? undefined : { text: profile.recipients[recipient].displayName };
       case 'questions':
         return c.questions.length ? { items: c.questions.map((q) => ensureQuestion(capitalizeFirst(q))) } : undefined;
       case 'approval_object':
@@ -179,7 +243,8 @@ export function buildPlan(
     const body = content(kind);
     if (!body) continue;
     const key = LABEL_KEY[kind];
-    sections.push({ kind, label: key ? labels[key] : undefined, ...body });
+    const { flowing, ...rest } = body;
+    sections.push({ kind, label: key && !flowing ? labels[key] : undefined, ...rest });
   }
   return { sections };
 }

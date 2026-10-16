@@ -7,6 +7,7 @@ import type {
   LengthMode,
   Recipient,
   TechLevel,
+  TextStyle,
   TicketContext,
   UserConfirmation,
 } from '../domain/types';
@@ -36,24 +37,26 @@ export interface FormState {
   destinationTeam: string;
   escalationReason: string;
   freeIntent: string;
+  requesterName: string;
+  textStyle: TextStyle;
 }
 
 export type TextFormField = Exclude<
   keyof FormState,
-  'type' | 'recipient' | 'techLevel' | 'formality' | 'length' | 'variant' | 'userConfirmation'
+  'type' | 'recipient' | 'techLevel' | 'formality' | 'length' | 'variant' | 'userConfirmation' | 'textStyle'
 >;
 
 export const TEXT_FORM_FIELDS: TextFormField[] = [
   'summary', 'actions', 'observedResult', 'pendingItem', 'expectedAction', 'explicitDeadline', 'evidence', 'notes',
   'questions', 'approvalObject', 'approvalEffect', 'contactAttempts', 'priorNoticeDate', 'destinationTeam',
-  'escalationReason', 'freeIntent',
+  'escalationReason', 'freeIntent', 'requesterName',
 ];
 
 export function emptyContent(): Pick<FormState, TextFormField | 'userConfirmation'> {
   return {
     summary: '', actions: '', observedResult: '', pendingItem: '', expectedAction: '', explicitDeadline: '',
     evidence: '', notes: '', questions: '', approvalObject: '', approvalEffect: '', contactAttempts: '',
-    priorNoticeDate: '', destinationTeam: '', escalationReason: '', freeIntent: '', userConfirmation: 'unknown',
+    priorNoticeDate: '', destinationTeam: '', escalationReason: '', freeIntent: '', requesterName: '', userConfirmation: 'unknown',
   };
 }
 
@@ -65,6 +68,7 @@ export function initialForm(): FormState {
     formality: 'cordial',
     length: 'standard',
     variant: 0,
+    textStyle: 'natural',
     ...emptyContent(),
   };
 }
@@ -90,6 +94,7 @@ export function toGenerationInput(form: FormState): GenerationInput {
     destinationTeam: form.destinationTeam,
     escalationReason: form.escalationReason,
     freeIntent: form.freeIntent,
+    requesterName: form.requesterName,
   };
   // Minimização: apenas os campos exibidos para o tipo atual entram na geração.
   const visible = new Set<ContextField>([...TYPE_FIELDS[form.type].main, ...TYPE_FIELDS[form.type].advanced]);
@@ -104,6 +109,7 @@ export function toGenerationInput(form: FormState): GenerationInput {
       formality: form.formality,
       length: form.length,
       variant: form.variant,
+      style: form.textStyle,
     },
     context,
   };

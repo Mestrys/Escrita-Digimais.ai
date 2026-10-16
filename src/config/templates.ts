@@ -119,11 +119,7 @@ export const DEFAULT_TYPE_CLOSINGS: PhraseTable = {
     formal: ['A confirmação permitirá registrar o resultado do atendimento.', 'A sua confirmação possibilitará o registro do resultado do atendimento.'],
     direct: ['Com a confirmação, registramos o resultado.', 'Precisamos da confirmação para registrar o resultado.'],
   },
-  closure_resolved: {
-    cordial: ['O chamado foi encerrado com base no resultado descrito acima.', 'O encerramento foi feito com base no resultado descrito acima.'],
-    formal: ['O encerramento foi registrado com base no resultado descrito acima.', 'O encerramento fundamenta-se no resultado descrito acima.'],
-    direct: ['Encerramento baseado no resultado descrito acima.', 'Encerrado com base no resultado acima.'],
-  },
+  closure_resolved: none,
   closure_no_response: none,
   redirect_or_escalate: {
     cordial: ['O atendimento seguirá com a equipe indicada.', 'A equipe indicada dará continuidade ao atendimento.'],
@@ -202,6 +198,26 @@ export const LABEL_OVERRIDES: Partial<Record<CommunicationType, Partial<Record<L
   closure_resolved: { result: 'Resultado validado' },
   closure_no_response: { context: 'Solicitação do atendimento', pending: 'Informação aguardada' },
   redirect_or_escalate: { actions_done: 'Verificações já realizadas', expected_action: 'Continuidade esperada' },
+};
+
+/**
+ * Frases de ligação do estilo natural, no lugar dos rótulos secos. Duas variações por seção, escolhidas
+ * pelo índice de variação. Aplicadas só a textos para pessoas (usuário, gestor, outro) e só quando a
+ * organização não definiu rótulos próprios no perfil.
+ */
+export const NATURAL_LEADS: Partial<Record<LabelKey, readonly string[]>> = {
+  context: ['Resumo da situação', 'Sobre o seu atendimento'],
+  actions_done: ['O que já fizemos', 'Até aqui, realizamos'],
+  actions_planned: ['Os próximos passos são', 'Em seguida, faremos o seguinte'],
+  result: ['O que observamos', 'Resultado até o momento'],
+  pending: ['O que ainda está pendente', 'Pendência no momento'],
+  questions: ['Para avançarmos, precisamos saber', 'Pode nos ajudar com as informações abaixo'],
+};
+
+/** Quem age em "ação esperada" muda conforme o destinatário. */
+export const NATURAL_EXPECTED_ACTION: Record<'person' | 'manager', readonly string[]> = {
+  person: ['O que precisamos de você', 'Próximo passo do seu lado'],
+  manager: ['Ação esperada do gestor', 'Encaminhamento esperado'],
 };
 
 /** Frases fixas por formalidade, usadas em seções específicas. */

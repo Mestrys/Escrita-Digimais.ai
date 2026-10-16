@@ -11,9 +11,9 @@ Olá,
 
 Para continuarmos a análise, precisamos de algumas informações.
 
-Contexto: Usuária relata erro ao abrir a planilha de custos.
+Resumo da situação: Usuária relata erro ao abrir a planilha de custos.
 
-Informações necessárias:
+Para avançarmos, precisamos saber:
 1. Qual mensagem de erro aparece na tela?
 2. O erro ocorre com outros arquivos?
 
@@ -52,11 +52,9 @@ Olá,
 
 O atendimento permanece pendente. Seguem os detalhes.
 
-Pendência: Envio da planilha corrigida pelo usuário.
+O que ainda está pendente: Envio da planilha corrigida pelo usuário.
 
-Pendente com: usuário
-
-Ação esperada: Enviar o arquivo atualizado.
+O que precisamos de você: Enviar o arquivo atualizado.
 
 Aguardamos a conclusão do item acima para seguirmos com o atendimento.
 
@@ -94,13 +92,13 @@ Olá,
 
 Passamos para informar o andamento do seu chamado.
 
-Contexto: Lentidão ao abrir o sistema.
+Resumo da situação: Lentidão ao abrir o sistema.
 
-Ações realizadas: Limpeza do cache do navegador.
+O que já fizemos: Limpeza do cache do navegador.
 
-Resultado observado: A lentidão diminuiu parcialmente.
+O que observamos: A lentidão diminuiu parcialmente.
 
-Pendência: Acompanhar o comportamento por dois dias.
+O que ainda está pendente: Acompanhar o comportamento por dois dias.
 
 Agradecemos a colaboração.
 Equipe de Service Desk
@@ -108,18 +106,18 @@ Equipe de Service Desk
 
 ## 6. Confirmar solução com o usuário (`solution_confirmation`)
 
-Destinatário: user. Alertas: nenhum.
+Destinatário: user. Alertas: `voice_adjusted`.
 
 ```text
 Olá,
 
 Realizamos as ações descritas abaixo e gostaríamos de confirmar se a situação foi resolvida.
 
-Contexto: Impressora não imprimia.
+Resumo da situação: Impressora não imprimia.
 
-Ações realizadas: Reinstalado o driver da impressora.
+Até aqui, reinstalamos o driver da impressora.
 
-Resultado observado: Página de teste impressa.
+O que observamos: Página de teste impressa.
 
 A sua confirmação nos permitirá registrar o resultado do atendimento.
 
@@ -129,22 +127,20 @@ Equipe de Service Desk
 
 ## 7. Encerrar chamado solucionado (`closure_resolved`)
 
-Destinatário: user. Alertas: nenhum.
+Destinatário: user. Alertas: `voice_adjusted`.
 
 ```text
 Olá,
 
 Estamos encerrando este chamado com a situação solucionada, conforme descrito abaixo.
 
-Contexto: Impressora não imprimia.
+Resumo da situação: Impressora não imprimia.
 
-Ações realizadas: Reinstalado o driver da impressora.
+Até aqui, reinstalamos o driver da impressora.
 
 Resultado validado: Página de teste impressa e confirmada no equipamento.
 
 O usuário confirmou a solução.
-
-O chamado foi encerrado com base no resultado descrito acima.
 
 Se precisar de apoio novamente, entre em contato conosco.
 
@@ -182,7 +178,7 @@ Equipe de Service Desk
 
 ## 9. Redirecionar ou escalonar (`redirect_or_escalate`)
 
-Destinatário: user. Alertas: nenhum.
+Destinatário: user. Alertas: `voice_adjusted`.
 
 ```text
 Olá,
@@ -191,7 +187,7 @@ Para que a análise tenha continuidade, estamos encaminhando este atendimento. D
 
 Motivo do encaminhamento: A análise exige acesso administrativo ao ambiente de armazenamento.
 
-Verificações já realizadas: Validadas as permissões do usuário.
+Até aqui, validamos as permissões do usuário.
 
 O atendimento seguirá com a equipe indicada.
 
@@ -208,7 +204,7 @@ Olá,
 
 O atendimento presencial foi agendado.
 
-Contexto: Troca de equipamento solicitada.
+Resumo da situação: Troca de equipamento solicitada.
 
 Agradecemos a colaboração.
 Equipe de Service Desk

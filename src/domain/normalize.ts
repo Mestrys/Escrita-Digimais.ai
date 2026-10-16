@@ -47,6 +47,7 @@ const TEXT_FIELDS: ContextField[] = [
   'destinationTeam',
   'escalationReason',
   'freeIntent',
+  'requesterName',
 ];
 const LIST_FIELDS: ContextField[] = ['actions', 'evidence', 'questions', 'contactAttempts'];
 
