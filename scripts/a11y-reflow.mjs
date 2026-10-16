@@ -2,7 +2,10 @@
 // Verificação manual de reflow em navegador real (WCAG 1.4.10 e 1.4.12). Não roda no CI.
 // Uso: npm run build && node scripts/a11y-reflow.mjs [dist]
 // Requer o Playwright instalado (PLAYWRIGHT_MODULE pode apontar para o módulo) e carrega a extensão em Chromium.
-const dist = new URL(`../${process.argv[2] ?? 'dist'}/`, import.meta.url).pathname;
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+const root = fileURLToPath(new URL('..', import.meta.url));
+const dist = resolve(root, process.argv[2] ?? 'dist');
 let chromium;
 try {
   ({ chromium } = await import(process.env.PLAYWRIGHT_MODULE ?? 'playwright'));
