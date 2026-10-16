@@ -43,8 +43,8 @@ describe('estilo natural', () => {
   it('fala em nome da equipe, em frases corridas, e avisa do ajuste', () => {
     const r = gen('progress_update', ctx, { techLevel: 'simple' });
     expect(r.blocked).toBe(false);
-    expect(r.text).toContain('Até aqui, resetamos a senha no AD e testamos conexão com a conta dele.');
-    expect(r.text).toContain('Em seguida, vamos validar com o usuário amanhã.');
+    expect(r.text).toContain('Até aqui, resetamos a senha no AD e testamos conexão com a sua conta.');
+    expect(r.text).toContain('Em seguida, vamos validar com você amanhã.');
     expect(r.text).toContain('nosso teste');
     expect(r.text).not.toMatch(/\bresetei\b|\bmeu\b/i);
     const w = r.warnings.find((x) => x.code === 'voice_adjusted');
@@ -143,5 +143,69 @@ describe('detalhes de naturalidade', () => {
     expect(gen('pending', c, { recipient: 'user' }).text).not.toContain('Pendente com');
     expect(gen('pending', c, { recipient: 'manager' }).text).toContain('Pendente com: gestor');
     expect(gen('pending', c, { recipient: 'user', style: 'structured' }).text).toContain('Pendente com: usuário');
+  });
+});
+
+describe('voz para o destinatário (prosa v2)', () => {
+  it('converte referências ao usuário para a segunda pessoa, só em formas conhecidas', async () => {
+    const { toRecipientVoice } = await import('../domain/voice');
+    const cases: [string, string][] = [
+      ['validar com o usuário amanhã', 'validar com você amanhã'],
+      ['Com a usuária, testamos o acesso', 'Com você, testamos o acesso'],
+      ['o teste do usuário', 'o seu teste'],
+      ['as permissões do usuário', 'as suas permissões'],
+      ['a senha da usuária', 'a sua senha'],
+      ['Aguardando teste do usuário', 'Aguardamos seu teste'],
+      ['Aguardando a resposta do usuário', 'Aguardamos a sua resposta'],
+      ['testamos a conta dele', 'testamos a sua conta'],
+      ['liberado o acesso dela', 'liberado o seu acesso'],
+      ['aguardando teste do usuário', 'aguardamos seu teste'],
+      ['enviado pelo usuário', 'enviado por você'],
+      ['retornar ao usuário', 'retornar a você'],
+    ];
+    for (const [from, to] of cases) expect(toRecipientVoice(from).text, from).toBe(to);
+  });
+
+  it('não converte quando "usuário" é seguido de nome próprio nem palavras fora da lista', async () => {
+    const { toRecipientVoice } = await import('../domain/voice');
+    for (const t of ['com o usuário João', 'o teste do usuário Pedro', 'a fila do usuário', 'o servidor dele', 'o setor dela']) {
+      expect(toRecipientVoice(t), t).toEqual({ text: t, changes: [] });
+    }
+  });
+
+  it('no texto gerado ao usuário, ele passa a ser "você"; ao gestor ou no estilo estruturado, não', () => {
+    const c = {
+      summary: 'acesso negado à pasta',
+      actions: ['validei as permissões do usuário', 'Planejado: testar com o usuário amanhã'],
+      pendingItem: 'aguardando teste do usuário',
+    };
+    const u = gen('progress_update', c, { recipient: 'user' });
+    expect(u.text).toContain('validamos as suas permissões');
+    expect(u.text).toContain('vamos testar com você amanhã');
+    expect(u.text).toContain('Aguardamos seu teste');
+    const m = gen('progress_update', c, { recipient: 'manager' });
+    expect(m.text).toContain('permissões do usuário');
+    expect(m.text).toContain('com o usuário');
+    const s = gen('progress_update', c, { recipient: 'user', style: 'structured' });
+    expect(s.text).toContain('Validei as permissões do usuário');
+  });
+
+  it('o aviso informa a troca de "o usuário" para "você"', () => {
+    const r = gen('progress_update', { summary: 'x', actions: ['testei com o usuário'] }, { recipient: 'user' });
+    expect(r.warnings.find((w) => w.code === 'voice_adjusted')?.message).toContain('"com o usuário" para "com você"');
+  });
+
+  it('encerramento: a confirmação fala com a pessoa; ao gestor continua em terceira pessoa', () => {
+    const c = { summary: 'impressora', actions: ['reinstalei o driver'], observedResult: 'impressão ok', userConfirmation: 'yes' as const };
+    expect(gen('closure_resolved', c, { recipient: 'user' }).text).toContain('Você confirmou a solução.');
+    expect(gen('closure_resolved', c, { recipient: 'manager' }).text).toContain('O usuário confirmou a solução.');
+  });
+
+  it('seções de fatos e de próximos passos formam parágrafos; listas continuam separadas', () => {
+    const r = gen('progress_update', { summary: 'lentidão', actions: ['limpei o cache'], observedResult: 'melhorou', pendingItem: 'acompanhar', expectedAction: 'avisar se voltar' }, { recipient: 'user' });
+    const paras = r.text.split('\n\n');
+    expect(paras.some((p) => p.includes('Resumo') && p.includes('Até aqui') && p.includes('O que observamos'))).toBe(true);
+    const list = gen('progress_update', { summary: 'lentidão', actions: ['limpei o cache', 'Limpeza do disco', 'x'], observedResult: 'melhorou' }, { recipient: 'user' });
+    expect(list.text).toMatch(/\n1\. /);
   });
 });

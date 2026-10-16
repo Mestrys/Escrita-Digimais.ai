@@ -324,6 +324,12 @@ export const FIXED_PHRASES = {
   notice: 'Aviso prévio de encerramento registrado em {date}.',
 } as const;
 
+/** Versões das frases fixas para quando o texto é escrito ao próprio usuário (estilo natural). */
+export const FIXED_PHRASES_TO_USER = {
+  user_confirmed: 'Você confirmou a solução.',
+  user_not_confirmed: 'Até o momento do encerramento, não há registro de confirmação da sua parte sobre a solução.',
+} as const;
+
 export interface ResolvedTemplates {
   openings: PhraseTable;
   typeClosings: PhraseTable;

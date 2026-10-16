@@ -45,16 +45,14 @@ Próximos passos: Reiniciar o serviço de autenticação.
 
 ## 3. Registrar pendência (`pending`)
 
-Destinatário: user. Alertas: nenhum.
+Destinatário: user. Alertas: `voice_adjusted`.
 
 ```text
 Olá,
 
 O atendimento permanece pendente. Seguem os detalhes.
 
-O que ainda está pendente: Envio da planilha corrigida pelo usuário.
-
-O que precisamos de você: Enviar o arquivo atualizado.
+O que ainda está pendente: Envio da planilha corrigida por você. O que precisamos de você: Enviar o arquivo atualizado.
 
 Aguardamos a conclusão do item acima para seguirmos com o atendimento.
 
@@ -113,11 +111,7 @@ Olá,
 
 Realizamos as ações descritas abaixo e gostaríamos de confirmar se a situação foi resolvida.
 
-Resumo da situação: Impressora não imprimia.
-
-Até aqui, reinstalamos o driver da impressora.
-
-O que observamos: Página de teste impressa.
+Resumo da situação: Impressora não imprimia. Até aqui, reinstalamos o driver da impressora. O que observamos: Página de teste impressa.
 
 A sua confirmação nos permitirá registrar o resultado do atendimento.
 
@@ -134,13 +128,9 @@ Olá,
 
 Estamos encerrando este chamado com a situação solucionada, conforme descrito abaixo.
 
-Resumo da situação: Impressora não imprimia.
+Resumo da situação: Impressora não imprimia. Até aqui, reinstalamos o driver da impressora. Resultado validado: Página de teste impressa e confirmada no equipamento.
 
-Até aqui, reinstalamos o driver da impressora.
-
-Resultado validado: Página de teste impressa e confirmada no equipamento.
-
-O usuário confirmou a solução.
+Você confirmou a solução.
 
 Se precisar de apoio novamente, entre em contato conosco.
 
@@ -187,7 +177,7 @@ Para que a análise tenha continuidade, estamos encaminhando este atendimento. D
 
 Motivo do encaminhamento: A análise exige acesso administrativo ao ambiente de armazenamento.
 
-Até aqui, validamos as permissões do usuário.
+Até aqui, validamos as suas permissões.
 
 O atendimento seguirá com a equipe indicada.
 
@@ -202,9 +192,7 @@ Destinatário: user. Alertas: nenhum.
 ```text
 Olá,
 
-O atendimento presencial foi agendado.
-
-Resumo da situação: Troca de equipamento solicitada.
+O atendimento presencial foi agendado. Resumo da situação: Troca de equipamento solicitada.
 
 Agradecemos a colaboração.
 Equipe de Service Desk

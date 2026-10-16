@@ -117,3 +117,87 @@ export function dedupeChanges(changes: VoiceChange[]): VoiceChange[] {
   }
   return out;
 }
+
+// ---------- Voz para o destinatário (texto escrito ao próprio usuário) ----------
+
+type Gender = 'm' | 'f';
+interface NounInfo {
+  gender: Gender;
+  plural: boolean;
+}
+
+/** Substantivos comuns de chamado, com gênero e número. Lista fechada: fora dela, o texto não é tocado. */
+const NOUNS: Record<string, NounInfo> = {
+  teste: { gender: 'm', plural: false }, retorno: { gender: 'm', plural: false }, envio: { gender: 'm', plural: false },
+  contato: { gender: 'm', plural: false }, arquivo: { gender: 'm', plural: false }, print: { gender: 'm', plural: false },
+  acesso: { gender: 'm', plural: false }, login: { gender: 'm', plural: false }, perfil: { gender: 'm', plural: false },
+  cadastro: { gender: 'm', plural: false }, computador: { gender: 'm', plural: false }, notebook: { gender: 'm', plural: false },
+  equipamento: { gender: 'm', plural: false }, usuario: { gender: 'm', plural: false }, email: { gender: 'm', plural: false },
+  conta: { gender: 'f', plural: false }, senha: { gender: 'f', plural: false }, resposta: { gender: 'f', plural: false },
+  confirmacao: { gender: 'f', plural: false }, validacao: { gender: 'f', plural: false }, aprovacao: { gender: 'f', plural: false },
+  informacao: { gender: 'f', plural: false }, planilha: { gender: 'f', plural: false }, captura: { gender: 'f', plural: false },
+  maquina: { gender: 'f', plural: false }, estacao: { gender: 'f', plural: false }, conexao: { gender: 'f', plural: false },
+  impressora: { gender: 'f', plural: false }, disponibilidade: { gender: 'f', plural: false },
+  testes: { gender: 'm', plural: true }, arquivos: { gender: 'm', plural: true }, acessos: { gender: 'm', plural: true },
+  permissoes: { gender: 'f', plural: true }, contas: { gender: 'f', plural: true }, senhas: { gender: 'f', plural: true },
+  informacoes: { gender: 'f', plural: true }, respostas: { gender: 'f', plural: true },
+};
+
+const POSSESSIVE: Record<Gender, [string, string]> = { m: ['seu', 'seus'], f: ['sua', 'suas'] };
+
+const strip = (w: string): string => w.normalize('NFD').replace(/[̀-ͯ]/g, '').toLocaleLowerCase('pt-BR');
+const nounOf = (w: string): NounInfo | undefined => {
+  const key = strip(w);
+  return Object.prototype.hasOwnProperty.call(NOUNS, key) ? NOUNS[key] : undefined;
+};
+const possessiveFor = (n: NounInfo): string => POSSESSIVE[n.gender][n.plural ? 1 : 0];
+
+/**
+ * "Usuário" seguido de nome próprio indica outra pessoa; nesse caso não se converte.
+ * Atenção: com a flag `i`, `\p{Lu}` casa também minúsculas, por isso estes padrões não usam `i`.
+ */
+const NOT_NAMED = '(?!\\s+\\p{Lu})';
+const USER = '[Uu]su[áa]ri[oa]s?';
+
+const RULES_PERSON: { pattern: RegExp; to: string; capital: string }[] = [
+  { pattern: new RegExp(`(?<![\\p{L}])[Cc]om (?:o|a) ${USER}(?![\\p{L}])${NOT_NAMED}`, 'gu'), to: 'com você', capital: 'Com você' },
+  { pattern: new RegExp(`(?<![\\p{L}])[Pp]ara (?:o|a) ${USER}(?![\\p{L}])${NOT_NAMED}`, 'gu'), to: 'para você', capital: 'Para você' },
+  { pattern: new RegExp(`(?<![\\p{L}])(?:[Aa]o|[Àà]) ${USER}(?![\\p{L}])${NOT_NAMED}`, 'gu'), to: 'a você', capital: 'A você' },
+  { pattern: new RegExp(`(?<![\\p{L}])[Pp]el[oa] ${USER}(?![\\p{L}])${NOT_NAMED}`, 'gu'), to: 'por você', capital: 'Por você' },
+];
+
+/**
+ * Quando o texto é escrito ao próprio usuário, converte referências a ele em terceira pessoa para a segunda
+ * ("com o usuário" para "com você", "o teste do usuário" para "o seu teste", "conta dele" para "sua conta").
+ * Só atua em formas conhecidas e lista cada troca; "usuário" seguido de nome próprio nunca é convertido.
+ */
+export function toRecipientVoice(text: string): VoiceResult {
+  const changes: VoiceChange[] = [];
+  const note = (from: string, to: string): string => {
+    changes.push({ from, to });
+    return to;
+  };
+  let out = text;
+  for (const { pattern, to, capital } of RULES_PERSON) {
+    out = out.replace(pattern, (m) => note(m, m.charAt(0) === m.charAt(0).toUpperCase() ? capital : to));
+  }
+
+  // "o teste do usuário" e "teste do usuário"
+  const ofUser = new RegExp(`(?<![\\p{L}])(?:([oOaA]|[oO]s|[aA]s) )?(\\p{L}+) d[oa]s? ${USER}(?![\\p{L}])${NOT_NAMED}`, 'gu');
+  out = out.replace(ofUser, (m, article: string | undefined, noun: string) => {
+    const info = nounOf(noun);
+    if (!info) return m;
+    const poss = possessiveFor(info);
+    return note(m, `${article ? `${article} ` : ''}${poss} ${noun}`);
+  });
+
+  // "conta dele", "senha dela"
+  out = out.replace(/(?<![\p{L}])(\p{L}+) (?:dele|dela)(?![\p{L}])/giu, (m, noun: string) => {
+    const info = nounOf(noun);
+    return info ? note(m, `${possessiveFor(info)} ${noun}`) : m;
+  });
+
+  // "Aguardando seu teste" para "Aguardamos seu teste"
+  out = out.replace(/^([Aa])guardando(?= (?:o |a )?(?:seu|sua|seus|suas)(?![\p{L}]))/u, (m, first: string) => note(m, `${first}guardamos`));
+  return { text: out, changes };
+}

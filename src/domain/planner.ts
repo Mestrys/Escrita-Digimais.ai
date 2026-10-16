@@ -1,6 +1,6 @@
 import { BLUEPRINTS, RECORD_SKIPPED, includedAt, isRecordStyle } from '../config/blueprints';
 import type { SectionKind } from '../config/blueprints';
-import { FIXED_PHRASES, FLOW_LEADS, LABEL_OVERRIDES, LEAD_SIZE, NATURAL_EXPECTED_ACTION, NATURAL_LEADS } from '../config/templates';
+import { FIXED_PHRASES, FIXED_PHRASES_TO_USER, FLOW_LEADS, LABEL_OVERRIDES, LEAD_SIZE, NATURAL_EXPECTED_ACTION, NATURAL_LEADS } from '../config/templates';
 import type { ResolvedTemplates } from '../config/templates';
 import type { ClassifiedContext } from './classify';
 import { capitalizeFirst, ensureQuestion, ensureTerminalPunctuation, lowerFirst, stripTerminalPunctuation } from './text-utils';
@@ -18,6 +18,8 @@ export interface PlannedSection {
   label?: string;
   text?: string;
   items?: string[];
+  /** Seções consecutivas do mesmo grupo, só com texto corrido, formam um único parágrafo (estilo natural). */
+  group?: 'facts' | 'next';
 }
 
 export interface MessagePlan {
@@ -25,6 +27,17 @@ export interface MessagePlan {
   /** Redação usada em cada ponto com mais de uma opção (só índices). */
   choices?: PhraseChoices;
 }
+
+/** Estilo natural: o que aconteceu num parágrafo e o que falta (pendência, próximos passos) em outro. */
+const PARAGRAPH_GROUP: Partial<Record<SectionKind, 'facts' | 'next'>> = {
+  intent: 'facts',
+  context: 'facts',
+  actions_done: 'facts',
+  result: 'facts',
+  pending: 'next',
+  actions_planned: 'next',
+  expected_action: 'next',
+};
 
 const LABEL_KEY: Partial<Record<SectionKind, LabelKey>> = {
   context: 'context',
@@ -214,7 +227,10 @@ export function buildPlan(
       case 'no_response_meaning':
         return { text: FIXED_PHRASES.no_response_meaning };
       case 'user_confirmation':
-        return { text: c.userConfirmation === 'yes' ? FIXED_PHRASES.user_confirmed : FIXED_PHRASES.user_not_confirmed };
+      {
+        const phrases = natural && recipient === 'user' ? FIXED_PHRASES_TO_USER : FIXED_PHRASES;
+        return { text: c.userConfirmation === 'yes' ? phrases.user_confirmed : phrases.user_not_confirmed };
+      }
       case 'reason':
         return c.escalationReason ? { text: sentence(c.escalationReason) } : undefined;
       case 'privacy':
@@ -250,7 +266,7 @@ export function buildPlan(
     if (!body) continue;
     const key = LABEL_KEY[kind];
     const { flowing, ...rest } = body;
-    sections.push({ kind, label: key && !flowing ? labels[key] : undefined, ...rest });
+    sections.push({ kind, label: key && !flowing ? labels[key] : undefined, ...rest, ...(natural && PARAGRAPH_GROUP[kind] ? { group: PARAGRAPH_GROUP[kind] } : {}) });
   }
   const has = (kind: SectionKind): boolean => sections.some((s) => s.kind === kind);
   const choices: PhraseChoices = {};

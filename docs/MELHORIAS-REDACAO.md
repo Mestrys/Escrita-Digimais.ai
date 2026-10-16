@@ -64,6 +64,13 @@ Aprender com o conteúdo dos chamados é incompatível com as regras não negoci
 ## 3.3 Opção B: implementada (autorizada), com ressalva sobre os dados
 Rascunho livre: o analista cola a anotação, confere a divisão sugerida e só então os campos são preenchidos. Regras mais um classificador pequeno embarcado. Detalhes, medida e limites em [AVALIACAO-RASCUNHO.md](AVALIACAO-RASCUNHO.md). Como não existem anotações reais anonimizadas, o modelo foi treinado em exemplos fictícios; a taxa de acerto em produção é desconhecida e será medida no piloto pelas correções dos analistas.
 
+## 3.4 Prosa determinística v2
+Motivada pelo estudo de IA ([ESTUDO-IA-EMBARCADA.md](ESTUDO-IA-EMBARCADA.md)): o ganho de naturalidade mais seguro está em regras, não em modelo.
+- **Voz para o destinatário** (`toRecipientVoice`, só quando o texto é para o usuário e no estilo Natural): "com o usuário" vira "com você", "o teste do usuário" vira "o seu teste", "conta dele" vira "sua conta", "Aguardando teste do usuário" vira "Aguardamos seu teste". Substantivos em lista fechada (com gênero e número); "usuário" seguido de nome próprio nunca é convertido; fora da lista, nada muda. Cada troca aparece no alerta informativo `voice_adjusted`.
+- **Frases fixas ao usuário**: "Você confirmou a solução." e "não há registro de confirmação da sua parte"; para o gestor continuam em terceira pessoa.
+- **Parágrafos**: seções de fatos (contexto, ações feitas, resultado) formam um parágrafo e as de próximos passos (pendência, ações planejadas, ação esperada) outro; listas numeradas continuam em bloco próprio.
+- **Limite conhecido**: os rótulos ainda aparecem dentro dos parágrafos ("O que observamos: ..."). Fragmentos soltos ("Conexão ok no nosso teste") não podem ser reescritos em frase completa sem interpretar o texto, e isso só um modelo faria, com o risco medido no estudo.
+
 ## 4. Decisões que cabem ao usuário
 - D-IA-1: opção A aprovada e implementada (seção 3.1).
 - D-IA-2: opção B autorizada e implementada com dados fictícios; falta fornecer (ou autorizar a coleta de) anotações reais anonimizadas para melhorar o modelo.

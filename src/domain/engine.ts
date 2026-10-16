@@ -10,7 +10,7 @@ import { renderPlan } from './renderer';
 import { findingsToWarnings, reviewText } from './review';
 import { maskContext, scanContext } from './sensitive';
 import { evaluateSufficiency, recommendedWarnings } from './sufficiency';
-import { dedupeChanges, toTeamVoice } from './voice';
+import { dedupeChanges, toRecipientVoice, toTeamVoice } from './voice';
 import type { VoiceChange } from './voice';
 import type {
   BlockReason,
@@ -154,6 +154,20 @@ export function generate(
     classified.actionsDone = classified.actionsDone.map(convert);
     classified.actionsPlanned = classified.actionsPlanned.map(convert);
     if (classified.observedResult) classified.observedResult = convert(classified.observedResult);
+    if (settings.recipient === 'user') {
+      // Texto escrito ao próprio usuário: referências a ele deixam de ser em terceira pessoa.
+      const toUser = (text: string): string => {
+        const out = toRecipientVoice(text);
+        voiceChanges.push(...out.changes);
+        return out.text;
+      };
+      classified.actionsDone = classified.actionsDone.map(toUser);
+      classified.actionsPlanned = classified.actionsPlanned.map(toUser);
+      for (const key of ['observedResult', 'pendingItem', 'expectedAction'] as const) {
+        const value = classified[key];
+        if (value) classified[key] = toUser(value);
+      }
+    }
   }
   const plan = buildPlan(settings, classified, profile, resolveTemplates(profile.templates));
   const text = renderPlan(plan);
@@ -180,7 +194,7 @@ export function generate(
         {
           code: 'voice_adjusted',
           severity: 'info',
-          message: `A pessoa verbal foi ajustada para a voz da equipe: ${changes.map((c) => `"${c.from}" para "${c.to}"`).join('; ')}.`,
+          message: `A redação foi ajustada para a voz da equipe e para quem lê: ${changes.map((c) => `"${c.from}" para "${c.to}"`).join('; ')}.`,
           suggestion: 'Confira se continua fiel ao que foi feito. Para manter exatamente as suas palavras, use o estilo Estruturado.',
           dimension: 'clarity',
           penalty: 0,
