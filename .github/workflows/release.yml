@@ -36,14 +36,14 @@ jobs:
           manifest="$(node -p "require('./manifest.json').version")"
           pkg="$(node -p "require('./package.json').version")"
           echo "tag=$tag manifest=$manifest package=$pkg"
-          # O manifest pode ter 4 partes (0.0.4.0) e o package.json 3 (0.0.4). A tag pode ser a versão do package.json
-          # ou a do manifest; as duas precisam descrever a mesma versão (o manifest, com ".0" a mais, é aceito).
-          if [ "$manifest" != "$pkg" ] && [ "$manifest" != "$pkg.0" ]; then
-            echo "O manifest ($manifest) e o package.json ($pkg) precisam ter a mesma versão." >&2
-            exit 1
-          fi
+          # O package.json segue semver de 3 partes (1.0.0); o manifest pode ter uma 4ª parte numérica (1.0.0.1).
+          # A tag é a versão do manifest (a que identifica o zip) ou a do package.json.
+          case "$manifest" in
+            "$pkg"|"$pkg".[0-9]*) ;;
+            *) echo "O manifest ($manifest) precisa começar com a versão do package.json ($pkg)." >&2; exit 1 ;;
+          esac
           if [ "$tag" != "$pkg" ] && [ "$tag" != "$manifest" ]; then
-            echo "A tag (v$tag) precisa ser igual à versão do package.json ($pkg) ou do manifest ($manifest)." >&2
+            echo "A tag (v$tag) precisa ser igual à versão do manifest ($manifest) ou do package.json ($pkg)." >&2
             exit 1
           fi
 
