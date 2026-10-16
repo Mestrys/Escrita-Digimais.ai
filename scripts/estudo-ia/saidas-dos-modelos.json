@@ -1,0 +1,170 @@
+{
+ "out-0.5b.json": {
+  "modelo": "Qwen/Qwen2.5-0.5B-Instruct",
+  "segundos_por_caso": [
+   7.4,
+   6.9,
+   7.2,
+   5.5,
+   5.9,
+   6.9,
+   9.2
+  ],
+  "saidas": [
+   {
+    "tipo": "progress_update",
+    "texto": "Olá, Maria,\n\nPassamos para informar o andamento do seu chamado.\n\nResumo da situação: Usuário sem acesso à VPN desde ontem.\n\nAté aqui, resetamos a senha no AD e testamos conexão com a conta dele.\n\nO que observamos: Conexão ok no nosso teste.\n\nO que ainda está pendente: Aguardando teste do usuário.\n\nEm seguida, vamos validar com o usuário amanhã.\n\nAgradecemos a colaboração.\nEquipe de Service Desk"
+   },
+   {
+    "tipo": "solution_confirmation",
+    "texto": "Olá João,\n\nRealizamos as ações descritas abaixo e gostaríamos de confirmar se a situação foi resolvida.\n\nResumo da situação: Outlook está travando ao abrir anexos.\n\nAté aqui, reparamos o perfil do Outlook e limpamos o cache.\n\nO que observamos: Anexos estão abrindo normalmente.\n\nA sua confirmação nos permitirá registrar o resultado do atendimento.\n\nAgradecemos a colaboração.\nEquipe de Service Desk"
+   },
+   {
+    "tipo": "request_information",
+    "texto": "Olá Ana,\n\nEstou aqui para ajudar. Vou tentar entender a situação.\n\n1. Qual mensagem de erro aparece na tela?  \n2. O erro ocorre com outros arquivos?\n\nCom certeza, vou procurar essas informações.\n\nPrazo para retorno: 20/10/2026 às 17h\n\nVou enviar o retorno logo após essa data.\n\nAgradeço pela confiança.\n\nAtenciosamente,\n[Seu Nome]"
+   },
+   {
+    "tipo": "pending",
+    "texto": "Olá, Carlos,\n\nO atendimento está se tornando mais desafiador. Aqui estão os detalhes:\n\nO que ainda está pendente: Envio da planilha corrigida.\n\nO que precisamos de você: Enviar o arquivo atualizado.\n\nAguardamos a conclusão do item acima para continuar com o atendimento.\n\nAgradeço a sua colaboração.\n\nEquipe de Service Desk"
+   },
+   {
+    "tipo": "closure_resolved",
+    "texto": "Olá, Paula,\n\nEstamos encerrando este chamado com a situação solucionada, conforme descrito abaixo.\n\nResumo da situação: Impressora não imprimia.\n\nAté aqui, reinstalamos o driver da impressora.\n\nResultado validado: Página de teste impressa e confirmada.\n\nO usuário confirmou a solução.\n\nSe precisar de apoio novamente, entre em contato conosco.\n\nAgradecemos a colaboração.\nEquipe de Service Desk"
+   },
+   {
+    "tipo": "manager_approval",
+    "texto": "Prezado(a) gestor(a),\n\nSolicito a sua manifestação formal sobre o item descrito abaixo:\n\nObjeto da aprovação: Instalação do software de modelagem no equipamento patrimonial 00123.\n\nJustificativa: Necessário para o fechamento mensal.\n\nEfeito da aprovação: A instalação será agendada.\n\nSolicitamos que a manifestação seja registrada como \"De acordo\" ou \"Não aprovado\".\n\nAtenciosamente,\nEquipe de Service Desk"
+   },
+   {
+    "tipo": "redirect_or_escalate",
+    "texto": "Olá, Lucia,\n\nEstou recebendo o atendimento solicitado. O motivo do encaminhamento é a necessidade de acesso administrativo ao armazenamento.\n\nVou verificar as permissões do usuário e proceder à análise.\n\nAqui está o atendimento:\n\n- Atendimento solicitado\n- Motivo do encaminhamento: A análise exige acesso administrativo ao armazenamento\n- Até aqui validamos as permissões do usuário\n- O atendimento seguirá com a equipe indicada\n\nAgradeço a colaboração.\n\nEquipe de Service Desk"
+   }
+  ]
+ },
+ "out-1.5b.json": {
+  "modelo": "Qwen/Qwen2.5-1.5B-Instruct",
+  "segundos_por_caso": [
+   16.1,
+   15.3,
+   18.4,
+   10.6,
+   15.1,
+   16.5,
+   13.3
+  ],
+  "saidas": [
+   {
+    "tipo": "progress_update",
+    "texto": "Olá, Maria,\n\nPassamos para informar o andamento do seu chamado.\n\nResumo da situação: Usuário sem acesso à VPN desde ontem.\n\nAté aqui, resetamos a senha no AD e testamos conexão com a conta dele.\n\nO que observamos: Conexão ok no nosso teste.\n\nO que ainda está pendente: Aguardando teste do usuário.\n\nEm seguida, vamos validar com o usuário amanhã.\n\nAgradecemos a colaboração.\n\nEquipe de Service Desk"
+   },
+   {
+    "tipo": "solution_confirmation",
+    "texto": "Olá, João,\n\nRealizamos as ações descritas abaixo e gostaríamos de confirmar se a situação foi resolvida.\n\nResumo da situação: Outlook travando ao abrir anexos.\n\nAté aqui, reparamos o perfil do Outlook e limpamos o cache.\n\nO que observamos: Anexos abrindo normalmente.\n\nA sua confirmação nos permitirá registrar o resultado do atendimento.\n\nAgradecemos a colaboração.\n\nEquipe de Service Desk"
+   },
+   {
+    "tipo": "request_information",
+    "texto": "Olá, Ana,\n\nPara continuar a análise, precisamos de algumas informações.\n\nResumo da situação: Erro ao abrir a planilha de custos.\n\nPara avançarmos, precisamos saber:\n1. Qual mensagem de erro aparece na tela?\n2. O erro ocorre com outros arquivos?\n\nPrazo para retorno: 20/10/2026 às 17h\n\nPor segurança, não envie senhas, tokens ou outros dados de acesso neste chamado.\n\nO seu retorno permitirá que continuemos a análise.\n\nAgradecemos a colaboração.\nEquipe de Service Desk"
+   },
+   {
+    "tipo": "pending",
+    "texto": "Olá, Carlos,\n\nO atendimento permanece pendente. Seguem os detalhes.\n\nO que ainda está pendente: Envio da planilha corrigida.\n\nO que precisamos de você: Enviar o arquivo atualizado.\n\nAguardamos a conclusão do item acima para seguir com o atendimento.\n\nAgradecemos a colaboração.\nEquipe de Service Desk"
+   },
+   {
+    "tipo": "closure_resolved",
+    "texto": "Olá, Paula,\n\nEstamos encerrando este chamado com a situação solucionada, conforme descrito abaixo.\n\nResumo da situação: Impressora não imprimia.\n\nAté aqui, reinstalamos o driver da impressora.\n\nResultado validado: Página de teste impressa e confirmada.\n\nO usuário confirmou a solução.\n\nSe precisar de apoio novamente, entre em contato conosco.\n\nAgradecemos a colaboração.\n\nEquipe de Service Desk"
+   },
+   {
+    "tipo": "manager_approval",
+    "texto": "Prezado(a) Gestor(a),\n\nSolicitamos a sua manifestação formal quanto ao item descrito abaixo.\n\nObjeto da aprovação: Instalação do software de modelagem no equipamento patrimonial 00123.\n\nJustificativa: Necessário para o fechamento mensal.\n\nEfeito da aprovação: A instalação será agendada.\n\nSolicitamos que a manifestação seja registrada como \"De acordo\" ou \"Não aprovado\".\n\nAtenciosamente,\nEquipe de Service Desk"
+   },
+   {
+    "tipo": "redirect_or_escalate",
+    "texto": "Olá, Lucia,\n\nPara que a análise tenha continuidade, estamos encaminhando este atendimento. Destino: Equipe de Infraestrutura.\n\nMotivo do encaminhamento: A análise exige acesso administrativo ao armazenamento.\n\nAté aqui, validamos as permissões do usuário.\n\nO atendimento seguirá com a equipe indicada.\n\nAgradecemos a colaboração.\n\nEquipe de Service Desk"
+   }
+  ]
+ },
+ "out2-qwen1.5b.json": {
+  "modelo": "Qwen/Qwen2.5-1.5B-Instruct",
+  "segundos_por_caso": [
+   12.4,
+   9.2,
+   12.1,
+   5.6,
+   10.2,
+   1.6,
+   9.1
+  ],
+  "saidas": [
+   {
+    "tipo": "progress_update",
+    "texto": "Atualizamos o seu chamado sobre o usuário sem acesso à sua VPN. Resetamos a senha no AD e testamos a conexão com a conta do usuário, e a conexão funcionou no nosso teste.\n\nAgora aguardamos o teste do usuário. Vamos validar com ele amanhã."
+   },
+   {
+    "tipo": "solution_confirmation",
+    "texto": "A solução para o problema de Outlook travando ao abrir anexos foi implementada. Após reparamos o perfil do Outlook e limpei o cache, os anexos estão agora abrindo normalmente.\n\nPor favor, confirme se a situação foi resolvida."
+   },
+   {
+    "tipo": "request_information",
+    "texto": "Para ajudar a resolver o problema com a planilha de custos, precisamos de algumas informações:\n\n1. Qual mensagem de erro aparece na tela?\n2. O erro ocorre com outros arquivos?\n\nSe puder responder até 20/10/2026 às 17h, faremos o melhor esforço para solucionar o problema."
+   },
+   {
+    "tipo": "pending",
+    "texto": "Ocorreu uma correção na planilha e está sendo enviada. Por favor, confira se o arquivo foi enviado corretamente."
+   },
+   {
+    "tipo": "closure_resolved",
+    "texto": "Com base nas informações fornecidas, podemos concluir que a impressora está funcionando normalmente. A solução implementada foi eficaz, pois a página de teste foi impressa e confirmada.\n\nAgradecemos pela confirmação e ficamos à disposição se precisar de mais alguma coisa."
+   },
+   {
+    "tipo": "manager_approval",
+    "texto": "De acordo"
+   },
+   {
+    "tipo": "redirect_or_escalate",
+    "texto": "A análise do seu chamado está sendo encaminhada à equipe de Infraestrutura. A validação das permissões do usuário já foi concluída.\n\nSe tiver mais alguma informação ou precisar de ajuda, por favor, entre em contato conosco."
+   }
+  ]
+ },
+ "out2-phi4mini.json": {
+  "modelo": "microsoft/Phi-4-mini-instruct",
+  "segundos_por_caso": [
+   20.8,
+   17.2,
+   19.6,
+   14.1,
+   19.4,
+   14.4,
+   18.7
+  ],
+  "saidas": [
+   {
+    "tipo": "progress_update",
+    "texto": "Atualizamos o status do seu chamado referente ao seu acesso à VPN. Resetamos sua senha no Active Directory (AD) e testamos a conexão com sua conta. A conexão funcionou bem no nosso teste.\n\nAguardaremos o teste do usuário para confirmar se ele consegue acessar a VPN. Vamos validar com você amanhã."
+   },
+   {
+    "tipo": "solution_confirmation",
+    "texto": "Ficamos felizes em saber que após reparar o perfil do Outlook e limpar o cache, os anexos agora estão abertos normalmente. \n\nPodemos confirmar se a situação foi resolvida? Se sim, agradecemos sua paciência e compreensão."
+   },
+   {
+    "tipo": "request_information",
+    "texto": "Para poder ajudar a solucionar o problema com a planilha de custos, precisaremos de algumas informações adicionais:\n\n1. Qual mensagem de erro aparece na tela?\n2. O erro ocorre com outros arquivos?\n\nPor favor, responda até 20/10/2026 às 17h."
+   },
+   {
+    "tipo": "pending",
+    "texto": "Estamos trabalhando no seu pedido de envio da planilha corrigida. A ação esperada é que você envie o arquivo atualizado. Uma vez recebido, podemos prosseguir com as seguintes etapas. Obrigado pela sua colaboração."
+   },
+   {
+    "tipo": "closure_resolved",
+    "texto": "Fico feliz em saber que a página de teste foi impressa e confirmada após a reinstalação do driver da impressora. Se houver mais alguma coisa com a qual possamos ajudar, por favor, não hesite em nos informar. Obrigado pela sua paciência e compreensão."
+   },
+   {
+    "tipo": "manager_approval",
+    "texto": "Agradecemos sua solicitação de instalação do software de modelagem no equipamento patrimonial 00123, necessária para o fechamento mensal.\n\nDe acordo. A instalação será agendada conforme possível. Obrigado pela compreensão."
+   },
+   {
+    "tipo": "redirect_or_escalate",
+    "texto": "Acompanhar seu chamado para a equipe de Infraestrutura. A análise requer acesso administrativo ao armazenamento, o que já verificamos nas permissões do usuário.\n\nEsperamos que a equipe possa ajudar a resolver este problema. Por favor, avise-nos se há algo mais que possamos fazer."
+   }
+  ]
+ }
+}
