@@ -72,7 +72,7 @@ Carregue a pasta `dist/`. É exatamente o conteúdo que vai para o `.zip` (minif
 
 ## Caminho C: pacote gerado pelo CI (sem Node)
 1. No GitHub, abra **Actions > CI**, escolha uma execução verde do `main` e, em **Artifacts**, baixe `extensao-<sha>` (exige login; o artefato fica disponível por 14 dias).
-2. O download é um `.zip` que contém outro `.zip` (`assistente-textos-service-desk-<versão>.zip`). Extraia os dois.
+2. O download é um `.zip` que contém outro `.zip` (`escrita-digimais.ai_v<versão>.zip`). Extraia os dois.
 3. Mova o conteúdo extraído para uma pasta estável, por exemplo `C:\Extensoes\assistente-service-desk\`, antes de carregar (veja a seção sobre o ID).
 4. Siga os passos de "Carregar a extensão" do caminho A, selecionando essa pasta. Ela deve conter `manifest.json` diretamente, sem subpasta intermediária.
 

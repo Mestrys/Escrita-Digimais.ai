@@ -61,7 +61,7 @@ npm run dev        # build de desenvolvimento em dist-dev/, refeito a cada alter
 npm run build:dev  # build de desenvolvimento único, com verificação do pacote
 npm run build      # gera dist/
 npm run verify:dist
-npm run package    # gera release/assistente-textos-service-desk-<versão>.zip
+npm run package    # gera release/escrita-digimais.ai_v<versão>.zip
 npm run icons      # regenera os ícones PNG (sem dependências externas)
 npm run audit:deps # npm audit das dependências de produção
 ```

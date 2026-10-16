@@ -1,9 +1,9 @@
 # Entrega: estado do projeto
 
-Assistente de Textos do Service Desk, versão 0.1.0. Extensão para Microsoft Edge que ajuda analistas a redigir textos de chamados. Funciona 100% no navegador, sem rede e sem telemetria. Este documento fecha o desenvolvimento e lista, com dono, o que ainda depende de pessoas.
+Assistente de Textos do Service Desk, versão 0.0.2.0. Extensão para Microsoft Edge que ajuda analistas a redigir textos de chamados. Funciona 100% no navegador, sem rede e sem telemetria. Este documento fecha o desenvolvimento e lista, com dono, o que ainda depende de pessoas.
 
 ## Estado
-**Funcional e pronto para demonstração.** O pacote `assistente-textos-service-desk-0.1.0.zip` instala sozinho no Edge (116 ou superior) e foi exercitado em Chromium real.
+**Funcional e pronto para demonstração.** O pacote `escrita-digimais.ai_v0.0.2.0.zip` instala sozinho no Edge (116 ou superior) e foi exercitado em Chromium real.
 
 ## O que está incluído
 - **Geração** de 10 tipos de comunicação, com variações determinísticas, perfil de linguagem e limites de tamanho.

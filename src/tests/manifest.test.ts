@@ -8,7 +8,7 @@ describe('manifest.json', () => {
   it('é Manifest V3 com campos obrigatórios', () => {
     expect(manifest.manifest_version).toBe(3);
     expect(manifest.name).toBeTruthy();
-    expect(manifest.version).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(manifest.version).toMatch(/^\d+(?:\.\d+){1,3}$/);
     expect(manifest.description.length).toBeLessThanOrEqual(132);
   });
 
