@@ -3,6 +3,8 @@ import { emptyContent, initialForm, TEXT_FORM_FIELDS, toGenerationInput } from '
 import type { FormState, TextFormField } from '../application/form';
 import { DEFAULT_PREFERENCES } from '../application/preferences';
 import type { Preferences } from '../application/preferences';
+import { hasReviewContent, initialReviewForm, reviewInputProblem, toReviewContext } from '../application/review-form';
+import type { ReviewFormState } from '../application/review-form';
 import { createProvider, DISABLED_AI_POLICY, generateWithFallback } from '../application/provider';
 import type { AiPolicy, TextGenerationProvider } from '../application/provider';
 import {
@@ -11,6 +13,7 @@ import {
 import { DEFAULT_PROFILE } from '../config/language-profile';
 import { exportProfileJson, parseProfileJson } from '../config/profile-schema';
 import { reviewText } from '../domain/review';
+import type { ReviewResult } from '../domain/review';
 import { scanText } from '../domain/sensitive';
 import { SUFFICIENCY_MATRIX } from '../domain/sufficiency';
 import { COMMUNICATION_TYPES, FORMALITIES, LENGTHS, RECIPIENTS, TECH_LEVELS } from '../domain/types';
@@ -24,6 +27,7 @@ import { DiffView } from './components/DiffView';
 import { FieldControl } from './components/FieldControl';
 import type { Requirement } from './components/FieldControl';
 import { QualityPanel, WarningsList } from './components/ReviewPanel';
+import { ReviewMode } from './components/ReviewMode';
 import { SensitivePanel } from './components/SensitivePanel';
 import { SettingsPanel } from './components/SettingsPanel';
 
@@ -58,6 +62,18 @@ function missingFieldLabel(field: ContextField | undefined, type: CommunicationT
   return field ? `Ir para o campo ${fieldLabel(field, type)}` : 'Ir para o campo';
 }
 
+/** Tempo em que "Desfazer" fica disponível após uma limpeza manual. O conteúdo só vive em memória. */
+export const UNDO_CLEAR_MS = 30_000;
+
+interface SavedContent {
+  form: FormState;
+  result: GenerationResult | null;
+  text: string;
+  initialText: string;
+  review: ReviewFormState;
+  reviewResult: ReviewResult | null;
+}
+
 export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, providerFactory = createProvider, now }: AppProps) {
   const store = useMemo(() => storage ?? new AppStorage(), [storage]);
   const [form, setForm] = useState<FormState>(initialForm);
@@ -80,6 +96,11 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
   const [busy, setBusy] = useState(false);
   const [undo, setUndo] = useState<{ field: TextFormField; previous: string; label: string } | null>(null);
   const [activity, setActivity] = useState(0);
+  const [mode, setMode] = useState<'generate' | 'review'>('generate');
+  const [reviewForm, setReviewForm] = useState<ReviewFormState>(initialReviewForm);
+  const [reviewResult, setReviewResult] = useState<ReviewResult | null>(null);
+  const [reviewProblem, setReviewProblem] = useState<string | null>(null);
+  const [restorable, setRestorable] = useState<SavedContent | null>(null);
   const touched = useRef(new Set<string>());
   const previewRef = useRef<HTMLTextAreaElement>(null);
   const confirmRef = useRef<HTMLElement>(null);
@@ -121,7 +142,12 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
     clearButtonRef.current?.focus();
   };
 
-  const touch = useCallback(() => setActivity((n) => n + 1), []);
+
+  // Qualquer nova ação do analista descarta a possibilidade de desfazer a limpeza.
+  const touch = useCallback(() => {
+    setActivity((n) => n + 1);
+    setRestorable(null);
+  }, []);
 
   const clearContent = useCallback(() => {
     setForm((f) => ({ ...f, ...emptyContent(), variant: 0 }));
@@ -132,6 +158,9 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
     setShowDiff(false);
     setCopied('none');
     setUndo(null);
+    setReviewForm((r) => ({ ...initialReviewForm(), type: r.type, recipient: r.recipient }));
+    setReviewResult(null);
+    setReviewProblem(null);
   }, []);
 
   // Limpeza por inatividade (configurável). O estado vive só em memória.
@@ -143,6 +172,40 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
     }, prefs.autoClearMinutes * 60_000);
     return () => window.clearTimeout(id);
   }, [activity, prefs.autoClearMinutes, clearContent, setLive]);
+
+  // O conteúdo guardado para "Desfazer" expira sozinho.
+  useEffect(() => {
+    if (!restorable) return;
+    const id = window.setTimeout(() => setRestorable(null), UNDO_CLEAR_MS);
+    return () => window.clearTimeout(id);
+  }, [restorable]);
+
+  /** Limpeza pedida pelo analista: guarda o conteúdo em memória por pouco tempo para permitir desfazer. */
+  const manualClear = useCallback(() => {
+    const hasContent = Boolean(result) || TEXT_FORM_FIELDS.some((f) => form[f].trim()) || hasReviewContent(reviewForm);
+    if (!hasContent) {
+      clearContent();
+      return;
+    }
+    const saved: SavedContent = { form, result, text, initialText, review: reviewForm, reviewResult };
+    clearContent();
+    setRestorable(saved);
+    setLive('Conteúdo limpo. É possível desfazer por 30 segundos.');
+  }, [form, result, text, initialText, reviewForm, reviewResult, clearContent, setLive]);
+
+  const onRestore = (): void => {
+    if (!restorable) return;
+    setForm(restorable.form);
+    setResult(restorable.result);
+    setText(restorable.text);
+    setInitialText(restorable.initialText);
+    setReviewForm(restorable.review);
+    setReviewResult(restorable.reviewResult);
+    setSnapshot(null);
+    setRestorable(null);
+    setActivity((n) => n + 1);
+    setLive('Conteúdo restaurado.');
+  };
 
   const fields = TYPE_FIELDS[form.type];
   const visible = useMemo(() => new Set<string>([...fields.main, ...fields.advanced]), [fields]);
@@ -273,8 +336,30 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
     setLive('Alteração desfeita.');
   };
 
+  const onReviewChange = (patch: Partial<ReviewFormState>): void => {
+    setReviewForm((r) => ({ ...r, ...patch }));
+    if ('text' in patch || 'type' in patch || 'recipient' in patch) setReviewResult(null);
+    setReviewProblem(null);
+    touch();
+  };
+
+  const onReviewRun = (): void => {
+    const problem = reviewInputProblem(reviewForm);
+    setReviewProblem(problem);
+    if (problem) {
+      setReviewResult(null);
+      setLive(problem);
+      return;
+    }
+    const r = reviewText(reviewForm.text, toReviewContext(reviewForm, profile), profile);
+    setReviewResult(r);
+    setLive(`Revisão concluída: ${r.warnings.length} alerta(s) no texto.`);
+    touch();
+  };
+
   const doClearAll = async (): Promise<void> => {
-    clearContent();
+    if (alsoClearStored) clearContent();
+    else manualClear();
     if (alsoClearStored) {
       await store.clearAll();
       setPrefs(DEFAULT_PREFERENCES);
@@ -284,7 +369,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
     setConfirmClear(false);
     setAlsoClearStored(false);
     clearButtonRef.current?.focus();
-    setLive(alsoClearStored ? 'Conteúdo e dados armazenados apagados.' : 'Conteúdo apagado.');
+    if (alsoClearStored) setLive('Conteúdo e dados armazenados apagados.');
   };
 
   const onPrefs = (patch: Partial<Preferences>): void => {
@@ -391,6 +476,25 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
           tokens ou dados pessoais desnecessários.
         </p>
 
+        <div className="row" role="group" aria-label="Modo de uso">
+          <button type="button" className={mode === 'generate' ? 'primary' : undefined} aria-pressed={mode === 'generate'} onClick={() => setMode('generate')}>
+            Gerar texto
+          </button>
+          <button type="button" className={mode === 'review' ? 'primary' : undefined} aria-pressed={mode === 'review'} onClick={() => setMode('review')}>
+            Revisar texto pronto
+          </button>
+        </div>
+
+        {restorable && (
+          <div role="status" className="panel info">
+            <p>Conteúdo limpo. Você pode desfazer por 30 segundos; depois ele é descartado da memória.</p>
+            <div className="row">
+              <button type="button" onClick={onRestore}>Desfazer limpeza</button>
+              <button type="button" onClick={() => setRestorable(null)}>Dispensar</button>
+            </div>
+          </div>
+        )}
+
         {confirmClear && (
           <section
             ref={confirmRef}
@@ -431,6 +535,18 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
           />
         )}
 
+        {mode === 'review' ? (
+          <ReviewMode
+            form={reviewForm}
+            onChange={onReviewChange}
+            profile={profile}
+            result={reviewResult}
+            problem={reviewProblem}
+            onReview={onReviewRun}
+            onClear={manualClear}
+          />
+        ) : (
+        <>
         <form className="stack" autoComplete="off" aria-label="Dados do texto a gerar" onSubmit={(e) => { e.preventDefault(); onGenerate(); }}>
           <h2>1. Tipo de comunicação</h2>
           <div className="field">
@@ -563,13 +679,13 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
                 <button type="button" onClick={onVariant} disabled={busy}>Outra variação</button>
                 <button type="button" onClick={() => { setText(initialText); setSnapshot(null); touch(); }}>Restaurar modelo</button>
                 <button type="button" onClick={() => setShowDiff((s) => !s)} aria-pressed={showDiff}>Comparar com o texto inicial</button>
-                <button type="button" onClick={clearContent}>Limpar</button>
+                <button type="button" onClick={manualClear}>Limpar</button>
               </div>
               {copied === 'ok' && (
                 <div role="status" className="panel ok">
                   <p>Texto copiado. Deseja limpar o conteúdo agora?</p>
                   <div className="row">
-                    <button type="button" onClick={clearContent}>Limpar agora</button>
+                    <button type="button" onClick={manualClear}>Limpar agora</button>
                     <button type="button" onClick={() => setCopied('none')}>Manter</button>
                   </div>
                 </div>
@@ -590,6 +706,8 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
             </>
           )}
         </section>
+        </>
+        )}
       </main>
     </div>
   );
