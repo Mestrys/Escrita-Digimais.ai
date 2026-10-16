@@ -103,7 +103,7 @@ Desativado por padrão (opção mais segura). Para habilitar: `closureRules.noRe
 Em “Configurações > Perfil de linguagem”. A importação é local e recusa: JSON inválido, arquivo acima de 100 KB, chaves desconhecidas (inclusive `__proto__`), HTML, links, esquemas executáveis, caracteres de controle, placeholders não permitidos e valores fora de faixa. Termos são comparados como texto, nunca como expressão regular. A exportação gera o JSON do perfil efetivo.
 
 ### Política gerenciada (implantação empresarial)
-O esquema está em `public/managed-schema.json`. Exemplo de valor para a chave `languageProfile` (string JSON) via política do Edge (GPO/Intune, `3rdparty > extensions > <id> > policy`). A chave `aiProvider` está reservada e não ativa nenhuma chamada nesta versão.
+O esquema está em `public/managed-schema.json`. Exemplo de valor para a chave `languageProfile` (string JSON) via política do Edge (GPO/Intune, `3rdparty > extensions > <id> > policy`). A chave `usageCounters` (`off`, `optional` ou `on`; padrão `optional`) controla os contadores de uso agregados, sem conteúdo e só locais (ver PRIVACY.md). A chave `aiProvider` está reservada e não ativa nenhuma chamada nesta versão.
 
 ## Empacotamento
 `npm run package` executa build, verificação do pacote e gera um `.zip` de `dist/` em `release/`. A verificação (`scripts/verify-dist.mjs`) falha se encontrar permissões extras, CSP insegura, scripts inline, recursos remotos, `eval`, `new Function`, `fetch`, XHR, WebSocket ou `sendBeacon`.
@@ -129,3 +129,4 @@ Domínio público (Unlicense). Veja `LICENSE`.
 - Dados pessoais e de infraestrutura são mascarados na prévia (com aviso), mantendo o campo original intacto.
 - Credenciais e pedidos de credenciais bloqueiam geração e cópia.
 - Conteúdo nunca é persistido; limpeza por inatividade padrão de 15 minutos.
+- Contadores de uso são opt-in (ou definidos por política), apenas numéricos, em lista fechada de chaves, locais e exportáveis manualmente.

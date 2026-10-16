@@ -1,5 +1,6 @@
 import { DISABLED_AI_POLICY } from '../application/provider';
 import type { AiPolicy } from '../application/provider';
+import type { UsagePolicy } from '../application/usage-counters';
 
 /** Lê a política de IA da configuração gerenciada. Qualquer falha resulta em "desativado". */
 export async function loadAiPolicy(): Promise<AiPolicy> {
@@ -16,5 +17,18 @@ export async function loadAiPolicy(): Promise<AiPolicy> {
     };
   } catch {
     return DISABLED_AI_POLICY;
+  }
+}
+
+/** Política dos contadores de uso: "off" força desligado, "on" força ligado, "optional" (padrão) deixa com o analista. */
+export async function loadUsagePolicy(): Promise<UsagePolicy> {
+  try {
+    const managed = typeof chrome !== 'undefined' ? chrome.storage?.managed : undefined;
+    if (!managed) return 'optional';
+    const data = (await managed.get('usageCounters')) as { usageCounters?: unknown };
+    const v = data.usageCounters;
+    return v === 'off' || v === 'on' || v === 'optional' ? v : 'optional';
+  } catch {
+    return 'optional';
   }
 }

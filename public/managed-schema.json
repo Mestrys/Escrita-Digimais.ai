@@ -6,6 +6,12 @@
       "description": "Perfil de linguagem da organização, em JSON validado pela extensão. Tem precedência sobre perfis importados.",
       "type": "string"
     },
+    "usageCounters": {
+      "title": "Contadores de uso agregados",
+      "description": "off: desligados e sem opção para o analista. optional (padrão): o analista decide, começando desligado. on: ligados pela organização. Os contadores guardam apenas números por categoria, nunca texto de chamado, e ficam só no navegador.",
+      "type": "string",
+      "enum": ["off", "optional", "on"]
+    },
     "aiProvider": {
       "title": "Provedor de IA (desativado por padrão)",
       "description": "Reservado para versão futura. Nesta versão nenhuma chamada remota é feita.",

@@ -26,7 +26,7 @@ Atualizar snapshots de template só quando a mudança de texto for intencional: 
 ## Restrições de segurança (não negociáveis)
 - Permissões: apenas `sidePanel` e `storage`. Nada de host_permissions, content_scripts, tabs ou clipboardWrite.
 - Sem `fetch`, XHR, WebSocket, sendBeacon, `eval`, `new Function`, CDN ou script inline (ESLint e testes bloqueiam).
-- Persistir apenas preferências (allowlist em `application/preferences.ts`) e perfil validado. Nunca conteúdo de chamado.
+- Persistir apenas preferências (allowlist em `application/preferences.ts`), perfil validado e contadores numéricos opt-in (`application/usage-counters.ts`, lista fechada de chaves). Nunca conteúdo de chamado.
 - Credenciais, tokens e chaves bloqueiam a geração; demais dados sensíveis são mascarados com aviso.
 - Perfil importado: só texto simples validado por `config/profile-schema.ts`; termos nunca viram regex.
 - Nenhum segredo ou chave de API no repositório. Provedor remoto permanece desativado.

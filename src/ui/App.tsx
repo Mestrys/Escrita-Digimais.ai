@@ -2,6 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { emptyContent, initialForm, TEXT_FORM_FIELDS, toGenerationInput } from '../application/form';
 import type { FormState, TextFormField } from '../application/form';
 import { DEFAULT_PREFERENCES } from '../application/preferences';
+import {
+  effectiveUsageMode, exportCounters, generationKeys, timeBucket, UsageRecorder,
+} from '../application/usage-counters';
+import type { UsagePolicy } from '../application/usage-counters';
 import type { Preferences } from '../application/preferences';
 import { createProvider, DISABLED_AI_POLICY, generateWithFallback } from '../application/provider';
 import type { AiPolicy, TextGenerationProvider } from '../application/provider';
@@ -19,7 +23,7 @@ import type {
 } from '../domain/types';
 import { copyText } from '../infrastructure/clipboard';
 import { AppStorage } from '../infrastructure/storage';
-import { loadAiPolicy } from '../infrastructure/policy';
+import { loadAiPolicy, loadUsagePolicy } from '../infrastructure/policy';
 import { DiffView } from './components/DiffView';
 import { FieldControl } from './components/FieldControl';
 import type { Requirement } from './components/FieldControl';
@@ -30,6 +34,7 @@ import { SettingsPanel } from './components/SettingsPanel';
 export interface AppProps {
   storage?: AppStorage;
   loadPolicy?: () => Promise<AiPolicy>;
+  loadUsage?: () => Promise<UsagePolicy>;
   copy?: (text: string) => Promise<boolean>;
   providerFactory?: (policy: AiPolicy) => TextGenerationProvider;
   now?: () => Date;
@@ -54,13 +59,15 @@ const BLOCK_TITLES: Record<NonNullable<GenerationResult['blockReason']>, string>
   input_too_long: 'Geração bloqueada: conteúdo grande demais.',
 };
 
-export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, providerFactory = createProvider, now }: AppProps) {
+export function App({ storage, loadPolicy = loadAiPolicy, loadUsage = loadUsagePolicy, copy = copyText, providerFactory = createProvider, now }: AppProps) {
   const store = useMemo(() => storage ?? new AppStorage(), [storage]);
   const [form, setForm] = useState<FormState>(initialForm);
   const [profile, setProfile] = useState<LanguageProfile>(DEFAULT_PROFILE);
   const [profileSource, setProfileSource] = useState<'managed' | 'imported' | 'default'>('default');
   const [prefs, setPrefs] = useState<Preferences>(DEFAULT_PREFERENCES);
   const [policy, setPolicy] = useState<AiPolicy>(DISABLED_AI_POLICY);
+  const [usagePolicy, setUsagePolicy] = useState<UsagePolicy>('optional');
+  const [usageTotal, setUsageTotal] = useState(0);
   const [result, setResult] = useState<GenerationResult | null>(null);
   const [text, setText] = useState('');
   const [initialText, setInitialText] = useState('');
@@ -76,22 +83,32 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
   const [activity, setActivity] = useState(0);
   const touched = useRef(new Set<string>());
   const previewRef = useRef<HTMLTextAreaElement>(null);
+  const generatedAt = useRef(0);
+  const recorder = useMemo(
+    () => new UsageRecorder({ load: () => store.loadCounters(), save: (c) => store.saveCounters(c) }),
+    [store],
+  );
+  const usage = effectiveUsageMode(usagePolicy, prefs.usageCounters);
+  useEffect(() => recorder.setEnabled(usage.enabled), [recorder, usage.enabled]);
 
   useEffect(() => {
     let alive = true;
     void (async () => {
-      const [p, loaded, pol] = await Promise.all([store.loadPreferences(), store.loadProfile(), loadPolicy()]);
+      const [p, loaded, pol, usagePol] = await Promise.all([
+        store.loadPreferences(), store.loadProfile(), loadPolicy(), loadUsage(),
+      ]);
       if (!alive) return;
       setPrefs(p);
       setProfile(loaded.profile);
       setProfileSource(loaded.source);
       setPolicy(pol);
+      setUsagePolicy(usagePol);
       setForm((f) => ({ ...f, techLevel: p.techLevel, formality: p.formality, length: p.length }));
     })();
     return () => {
       alive = false;
     };
-  }, [store, loadPolicy]);
+  }, [store, loadPolicy, loadUsage]);
 
   const touch = useCallback(() => setActivity((n) => n + 1), []);
 
@@ -191,7 +208,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
     touch();
   };
 
-  const run = async (next: FormState): Promise<void> => {
+  const run = async (next: FormState, isVariant = false): Promise<void> => {
     setBusy(true);
     setCopied('none');
     const provider = providerFactory(policy);
@@ -203,6 +220,10 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
     setSnapshot(null);
     setShowDiff(false);
     setBusy(false);
+    generatedAt.current = Date.now();
+    void recorder.record(
+      isVariant ? ['variant'] : generationKeys(next.type, r.blocked ? r.blockReason : undefined, r.warnings.map((w) => w.code)),
+    );
     if (r.blocked) setLive('Geração bloqueada. O motivo está na seção de prévia e revisão.');
     else setLive(`Prévia gerada com ${r.warnings.length} alerta(s). Revise antes de copiar.`);
     touch();
@@ -212,12 +233,13 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
   const onVariant = (): void => {
     const next = { ...form, variant: form.variant + 1 };
     setForm(next);
-    void run(next);
+    void run(next, true);
   };
 
   const onReview = (): void => {
     if (!liveReview) return;
     const inputLevel = (result?.warnings ?? []).filter((w) => w.field && !liveReview.warnings.some((x) => x.code === w.code));
+    void recorder.record('review_again');
     setSnapshot({ warnings: [...liveReview.warnings, ...inputLevel], quality: liveReview.quality });
     setLive(`Revisão concluída: ${liveReview.warnings.length} alerta(s) no texto atual.`);
     touch();
@@ -226,6 +248,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
   const onCopy = async (): Promise<void> => {
     const ok = await copy(text);
     setCopied(ok ? 'ok' : 'fail');
+    if (ok) void recorder.record(['copy', `time_to_copy.${timeBucket(Date.now() - generatedAt.current)}`]);
     setLive(ok ? 'Texto copiado.' : 'Não foi possível copiar. Selecione o texto e copie manualmente.');
   };
 
@@ -280,6 +303,28 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
     a.download = 'perfil-de-linguagem.json';
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const refreshUsageTotal = useCallback(async (): Promise<void> => {
+    const snap = await recorder.snapshot();
+    setUsageTotal(Object.values(snap.counts).reduce((a, b) => a + b, 0));
+  }, [recorder]);
+
+  const onExportUsage = async (): Promise<void> => {
+    const blob = new Blob([exportCounters(await recorder.snapshot())], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'contadores-de-uso.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const onResetUsage = async (): Promise<void> => {
+    await recorder.snapshot();
+    await store.resetCounters();
+    setUsageTotal(0);
+    setLive('Contadores de uso zerados.');
   };
 
   const onResetProfile = async (): Promise<void> => {
@@ -343,7 +388,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
       <header className="app-header">
         <h1>Assistente de Textos do Service Desk</h1>
         <div className="row">
-          <button type="button" onClick={() => setShowSettings((s) => !s)} aria-expanded={showSettings}>
+          <button type="button" onClick={() => { if (!showSettings) void refreshUsageTotal(); setShowSettings((s) => !s); }} aria-expanded={showSettings}>
             Configurações
           </button>
           <button type="button" className="danger" onClick={() => setConfirmClear(true)}>
@@ -391,6 +436,9 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
             onImport={onImport}
             onExport={onExport}
             onResetProfile={() => void onResetProfile()}
+            usage={{ ...usage, policy: usagePolicy, total: usageTotal }}
+            onExportUsage={() => void onExportUsage()}
+            onResetUsage={() => void onResetUsage()}
           />
         )}
 

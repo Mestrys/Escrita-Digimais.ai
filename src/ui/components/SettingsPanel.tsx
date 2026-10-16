@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { ChangeEvent } from 'react';
 import { AUTO_CLEAR_OPTIONS } from '../../application/preferences';
 import type { Preferences } from '../../application/preferences';
+import type { UsagePolicy } from '../../application/usage-counters';
 import { FORMALITY_LABELS, LENGTH_LABELS, TECH_LEVEL_LABELS } from '../../config/fields';
 import { FORMALITIES, LENGTHS, TECH_LEVELS } from '../../domain/types';
 import type { LanguageProfile } from '../../domain/types';
@@ -14,11 +15,16 @@ interface Props {
   onImport: (text: string) => Promise<string[]>;
   onExport: () => void;
   onResetProfile: () => void;
+  usage: { enabled: boolean; locked: boolean; policy: UsagePolicy; total: number };
+  onExportUsage: () => void;
+  onResetUsage: () => void;
 }
 
 const SOURCE_LABEL = { managed: 'política da organização', imported: 'arquivo importado', default: 'padrão da extensão' } as const;
 
-export function SettingsPanel({ prefs, onPrefs, profile, profileSource, onImport, onExport, onResetProfile }: Props) {
+export function SettingsPanel({
+  prefs, onPrefs, profile, profileSource, onImport, onExport, onResetProfile, usage, onExportUsage, onResetUsage,
+}: Props) {
   const [errors, setErrors] = useState<string[]>([]);
   const [done, setDone] = useState(false);
 
@@ -63,6 +69,35 @@ export function SettingsPanel({ prefs, onPrefs, profile, profileSource, onImport
               <option key={v} value={v}>{v === 0 ? 'Desativado' : `${v} minutos`}</option>
             ))}
           </select>
+        </div>
+      </fieldset>
+
+      <fieldset className="stack">
+        <legend className="legend">Contadores de uso (opcional)</legend>
+        <p className="subtle">
+          Guardam apenas números por categoria, como quantos textos de cada tipo foram gerados, quantos foram bloqueados
+          e em que faixa de tempo o texto foi copiado. Nunca guardam o que você digita, datas de cada uso ou dados de
+          chamados. Ficam somente neste navegador e só saem se você exportar o arquivo.
+        </p>
+        {usage.locked ? (
+          <p role="status">
+            Contadores {usage.enabled ? 'ligados' : 'desligados'} pela política da organização. Não é possível alterar aqui.
+          </p>
+        ) : (
+          <div className="row">
+            <input
+              id="pref-usage"
+              type="checkbox"
+              checked={prefs.usageCounters}
+              onChange={(e) => onPrefs({ usageCounters: e.target.checked })}
+            />
+            <label htmlFor="pref-usage">Registrar contadores de uso neste navegador</label>
+          </div>
+        )}
+        <p className="subtle">Total registrado: {usage.total}</p>
+        <div className="row">
+          <button type="button" onClick={onExportUsage}>Exportar contadores</button>
+          <button type="button" onClick={onResetUsage}>Zerar contadores</button>
         </div>
       </fieldset>
 

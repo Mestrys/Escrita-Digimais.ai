@@ -7,6 +7,7 @@
 | Credenciais coladas em chamados | Detecção local bloqueia a geração e a cópia; o valor nunca é exibido nem retornado em alertas |
 | Exposição de dados pessoais ou de infraestrutura | Detecção conservadora com mascaramento visível na prévia e remoção assistida com “Desfazer” |
 | Persistência indevida de dados | Allowlist de chaves em `chrome.storage.local`; conteúdo vive só em memória; limpeza por inatividade e “Limpar tudo” |
+| Telemetria que vire vazamento de conteúdo | Contadores desligados por padrão; só inteiros em chaves de lista fechada (códigos de alerta limitados por formato e quantidade); valores adulterados são descartados na leitura; sem texto, sem marca de tempo por evento, sem rede; política `usageCounters` permite à organização desligar ou ligar |
 | Perfil importado malicioso (XSS, links de phishing, ReDoS, poluição de protótipo) | Validação estrita: só texto simples, sem HTML, URLs ou esquemas; chaves desconhecidas recusadas; termos escapados, nunca usados como regex; limite de 100 KB; React sem `innerHTML` |
 | Código remoto ou injetado | CSP `script-src 'self'`, sem CDN, sem `eval`/`new Function`, sem scripts inline; build com Vite sem polyfill inline |
 | Abuso de permissões | Somente `sidePanel` e `storage` |

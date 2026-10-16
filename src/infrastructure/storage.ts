@@ -3,6 +3,8 @@ import { validateProfile } from '../config/profile-schema';
 import { DEFAULT_PREFERENCES, sanitizePreferences } from '../application/preferences';
 import type { Preferences } from '../application/preferences';
 import type { LanguageProfile } from '../domain/types';
+import { dayString, emptyCounters, sanitizeCounters } from '../application/usage-counters';
+import type { UsageCounters } from '../application/usage-counters';
 
 /** Subconjunto mínimo de chrome.storage.StorageArea, injetável em testes. */
 export interface StorageArea {
@@ -12,7 +14,11 @@ export interface StorageArea {
   clear?(): Promise<void>;
 }
 
-export const STORAGE_KEYS = { preferences: 'preferences', profile: 'languageProfile' } as const;
+export const STORAGE_KEYS = {
+  preferences: 'preferences',
+  profile: 'languageProfile',
+  usageCounters: 'usageCounters',
+} as const;
 export const ALLOWED_KEYS: string[] = Object.values(STORAGE_KEYS);
 
 function chromeArea(name: 'local' | 'managed'): StorageArea | null {
@@ -76,6 +82,26 @@ export class AppStorage {
     const check = validateProfile(profile);
     if (!check.ok) throw new Error('Perfil inválido.');
     await this.local?.set({ [STORAGE_KEYS.profile]: check.profile });
+  }
+
+  /** Contadores agregados (sem conteúdo). Sempre sanitizados na leitura e na gravação. */
+  async loadCounters(now: Date = new Date()): Promise<UsageCounters> {
+    const today = dayString(now);
+    if (!this.local) return emptyCounters(today);
+    try {
+      const data = await this.local.get(STORAGE_KEYS.usageCounters);
+      return sanitizeCounters(data[STORAGE_KEYS.usageCounters], today);
+    } catch {
+      return emptyCounters(today);
+    }
+  }
+
+  async saveCounters(counters: UsageCounters): Promise<void> {
+    await this.local?.set({ [STORAGE_KEYS.usageCounters]: sanitizeCounters(counters, counters.since) });
+  }
+
+  async resetCounters(): Promise<void> {
+    await this.local?.remove(STORAGE_KEYS.usageCounters);
   }
 
   async clearAll(): Promise<void> {

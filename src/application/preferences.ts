@@ -7,6 +7,8 @@ export interface Preferences {
   formality: Formality;
   length: LengthMode;
   autoClearMinutes: number;
+  /** Opt-in para contadores de uso agregados e sem conteúdo (padrão: desligado). */
+  usageCounters: boolean;
 }
 
 export const AUTO_CLEAR_OPTIONS = [0, 5, 15, 30] as const;
@@ -16,6 +18,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   formality: 'cordial',
   length: 'standard',
   autoClearMinutes: 15,
+  usageCounters: false,
 };
 
 export const PREFERENCE_KEYS = Object.keys(DEFAULT_PREFERENCES) as (keyof Preferences)[];
@@ -31,5 +34,6 @@ export function sanitizePreferences(raw: unknown): Preferences {
   if (typeof r.autoClearMinutes === 'number' && (AUTO_CLEAR_OPTIONS as readonly number[]).includes(r.autoClearMinutes)) {
     out.autoClearMinutes = r.autoClearMinutes;
   }
+  if (typeof r.usageCounters === 'boolean') out.usageCounters = r.usageCounters;
   return out;
 }

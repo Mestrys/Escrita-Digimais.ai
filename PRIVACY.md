@@ -18,8 +18,15 @@ O processamento é local e determinístico. Os dados sensíveis detectados são 
 Somente em `chrome.storage.local`, neste navegador:
 - **Preferências**: nível técnico, formalidade, tamanho padrão e tempo de limpeza automática.
 - **Perfil de linguagem importado** (opcional): textos institucionais validados, sem dados de chamados.
+- **Contadores de uso** (opcional, desligados por padrão): números inteiros por categoria de uma lista fechada, mais a data em que a contagem começou.
 
 Nenhum conteúdo de chamado, texto gerado, histórico ou dado pessoal é armazenado. O botão “Limpar tudo” permite apagar também o que estiver salvo.
+
+### Contadores de uso
+- Desligados por padrão. O analista liga em Configurações, ou a organização força o estado pela política `usageCounters` (`off`, `optional` ou `on`).
+- Contam apenas: quantos textos de cada tipo foram gerados, quantas gerações foram bloqueadas por motivo, quais códigos de alerta apareceram, cópias, outras variações, revisões e a faixa de tempo até copiar (menos de 1 min, 1 a 3 min, 3 a 10 min, mais de 10 min).
+- Nunca registram texto digitado ou gerado, campos do chamado, número de chamado, identificação de pessoa, marca de tempo por evento ou dado sensível detectado.
+- Ficam somente neste navegador. Nada é enviado: o analista pode exportar o arquivo e entregá-lo se quiser. “Zerar contadores” e “Limpar tudo” apagam o registro.
 
 Administradores podem fornecer um perfil por política (`chrome.storage.managed`), somente leitura para a extensão.
 

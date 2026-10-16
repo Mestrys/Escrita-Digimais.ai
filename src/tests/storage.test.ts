@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_PROFILE } from '../config/language-profile';
 import { exportProfileJson } from '../config/profile-schema';
 import { DEFAULT_PREFERENCES, sanitizePreferences } from '../application/preferences';
+import { emptyCounters, increment } from '../application/usage-counters';
 import { AppStorage, ALLOWED_KEYS } from '../infrastructure/storage';
 import { MemoryArea } from './memory-storage';
 
@@ -54,6 +55,7 @@ describe('persistência', () => {
     await expect(s.saveProfile({ ...DEFAULT_PROFILE, maxLength: 1 })).rejects.toThrow();
     await s.saveProfile(DEFAULT_PROFILE);
     await s.savePreferences({ length: 'short' });
+    await s.saveCounters(increment(emptyCounters('2026-10-15'), 'copy'));
     expect(Object.keys(local.data).sort()).toEqual([...ALLOWED_KEYS].sort());
     await s.clearAll();
     expect(local.data).toEqual({});
