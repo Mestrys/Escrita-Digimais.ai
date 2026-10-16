@@ -54,6 +54,10 @@ const BLOCK_TITLES: Record<NonNullable<GenerationResult['blockReason']>, string>
   input_too_long: 'Geração bloqueada: conteúdo grande demais.',
 };
 
+function missingFieldLabel(field: ContextField | undefined, type: CommunicationType): string {
+  return field ? `Ir para o campo ${fieldLabel(field, type)}` : 'Ir para o campo';
+}
+
 export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, providerFactory = createProvider, now }: AppProps) {
   const store = useMemo(() => storage ?? new AppStorage(), [storage]);
   const [form, setForm] = useState<FormState>(initialForm);
@@ -70,12 +74,16 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
   const [copied, setCopied] = useState<'none' | 'ok' | 'fail'>('none');
   const [confirmClear, setConfirmClear] = useState(false);
   const [alsoClearStored, setAlsoClearStored] = useState(false);
-  const [live, setLive] = useState('');
+  // Cada anúncio vira um nó novo na região ao vivo, para que leitores de tela repitam mensagens idênticas.
+  const [liveState, setLiveState] = useState({ text: '', n: 0 });
+  const setLive = useCallback((text: string) => setLiveState((s) => ({ text, n: s.n + 1 })), []);
   const [busy, setBusy] = useState(false);
   const [undo, setUndo] = useState<{ field: TextFormField; previous: string; label: string } | null>(null);
   const [activity, setActivity] = useState(0);
   const touched = useRef(new Set<string>());
   const previewRef = useRef<HTMLTextAreaElement>(null);
+  const confirmRef = useRef<HTMLElement>(null);
+  const clearButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     let alive = true;
@@ -92,6 +100,26 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
       alive = false;
     };
   }, [store, loadPolicy]);
+
+  // Ao abrir a confirmação, o foco vai para ela; ao fechar, volta ao botão que a abriu.
+  useEffect(() => {
+    if (!confirmClear) return;
+    confirmRef.current?.focus();
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key !== 'Escape') return;
+      setConfirmClear(false);
+      setAlsoClearStored(false);
+      clearButtonRef.current?.focus();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [confirmClear]);
+
+  const closeConfirm = (): void => {
+    setConfirmClear(false);
+    setAlsoClearStored(false);
+    clearButtonRef.current?.focus();
+  };
 
   const touch = useCallback(() => setActivity((n) => n + 1), []);
 
@@ -114,7 +142,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
       setLive('Conteúdo limpo por inatividade.');
     }, prefs.autoClearMinutes * 60_000);
     return () => window.clearTimeout(id);
-  }, [activity, prefs.autoClearMinutes, clearContent]);
+  }, [activity, prefs.autoClearMinutes, clearContent, setLive]);
 
   const fields = TYPE_FIELDS[form.type];
   const visible = useMemo(() => new Set<string>([...fields.main, ...fields.advanced]), [fields]);
@@ -255,6 +283,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
     }
     setConfirmClear(false);
     setAlsoClearStored(false);
+    clearButtonRef.current?.focus();
     setLive(alsoClearStored ? 'Conteúdo e dados armazenados apagados.' : 'Conteúdo apagado.');
   };
 
@@ -346,14 +375,14 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
           <button type="button" onClick={() => setShowSettings((s) => !s)} aria-expanded={showSettings}>
             Configurações
           </button>
-          <button type="button" className="danger" onClick={() => setConfirmClear(true)}>
+          <button type="button" className="danger" ref={clearButtonRef} onClick={() => setConfirmClear(true)}>
             Limpar tudo
           </button>
         </div>
       </header>
 
       <div role="status" aria-live="polite" className="visually-hidden">
-        {live}
+        <span key={liveState.n}>{liveState.text}</span>
       </div>
 
       <main>
@@ -363,9 +392,17 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
         </p>
 
         {confirmClear && (
-          <section className="panel warn" role="alertdialog" aria-labelledby="confirm-title" aria-modal="false">
+          <section
+            ref={confirmRef}
+            tabIndex={-1}
+            className="panel warn"
+            role="alertdialog"
+            aria-labelledby="confirm-title"
+            aria-describedby="confirm-desc"
+            aria-modal="false"
+          >
             <h2 id="confirm-title">Apagar todo o conteúdo?</h2>
-            <p>O formulário, a prévia e os resultados serão apagados deste painel.</p>
+            <p id="confirm-desc">O formulário, a prévia e os resultados serão apagados deste painel. Pressione Esc para cancelar.</p>
             <div className="row">
               <input
                 id="also-stored"
@@ -377,7 +414,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
             </div>
             <div className="row">
               <button type="button" className="danger" onClick={() => void doClearAll()}>Apagar agora</button>
-              <button type="button" onClick={() => setConfirmClear(false)}>Cancelar</button>
+              <button type="button" onClick={closeConfirm}>Cancelar</button>
             </div>
           </section>
         )}
@@ -394,7 +431,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
           />
         )}
 
-        <form className="stack" autoComplete="off" onSubmit={(e) => { e.preventDefault(); onGenerate(); }}>
+        <form className="stack" autoComplete="off" aria-label="Dados do texto a gerar" onSubmit={(e) => { e.preventDefault(); onGenerate(); }}>
           <h2>1. Tipo de comunicação</h2>
           <div className="field">
             <label htmlFor="type">Tipo de comunicação</label>
@@ -478,7 +515,13 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
                   {result.missingInformation.map((q, i) => (
                     <li key={q}>
                       {q}{' '}
-                      <button type="button" onClick={() => focusField(result.missingFields[i])}>Ir para o campo</button>
+                      <button
+                        type="button"
+                        onClick={() => focusField(result.missingFields[i])}
+                        aria-label={missingFieldLabel(result.missingFields[i], form.type)}
+                      >
+                        Ir para o campo
+                      </button>
                     </li>
                   ))}
                 </ul>

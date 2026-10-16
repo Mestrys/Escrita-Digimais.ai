@@ -75,6 +75,9 @@ O workflow `.github/workflows/ci.yml` roda a cada pull request e a cada push no 
 
 Requer Edge 116 ou superior (API `chrome.sidePanel.open`).
 
+## Acessibilidade
+A interface é testada com axe-core (WCAG 2.2 AA), verificação de marcos, títulos, nomes, foco e anúncios, e contraste nos dois temas. O teste com leitor de tela (NVDA e Narrador) exige uma pessoa e ainda não foi executado: o roteiro e a tabela de resultados estão em [docs/ACESSIBILIDADE.md](docs/ACESSIBILIDADE.md).
+
 ## Uso
 1. Escolha o tipo de comunicação e o destinatário (o destinatário aplica nível técnico e formalidade sugeridos, até você alterar manualmente).
 2. Preencha os campos exibidos para o tipo. Campos opcionais ficam em “Campos opcionais”.
