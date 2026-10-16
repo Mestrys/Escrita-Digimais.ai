@@ -13,8 +13,9 @@ export interface ReviewFormState {
   explicitDeadline: string;
 }
 
+/** O tipo padrão é voltado ao usuário: a nota técnica é registro interno e não combina com o destinatário padrão. */
 export function initialReviewForm(): ReviewFormState {
-  return { type: 'technical_note', recipient: 'user', text: '', hasEvidence: false, userConfirmation: 'unknown', explicitDeadline: '' };
+  return { type: 'progress_update', recipient: 'user', text: '', hasEvidence: false, userConfirmation: 'unknown', explicitDeadline: '' };
 }
 
 export function hasReviewContent(form: ReviewFormState): boolean {

@@ -180,3 +180,68 @@ describe('acessibilidade do modo de revisão (axe)', () => {
     expect(res.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([]);
   });
 });
+
+describe('correções da revisão de segurança e de código', () => {
+  it('"Limpar tudo" com dados armazenados descarta a cópia do desfazer', async () => {
+    const { user } = setup();
+    typeIn(/^Perguntas ao destinatário/, 'Qual erro aparece na tela');
+    await user.click(screen.getByRole('button', { name: 'Gerar prévia' }));
+    await screen.findByLabelText('Prévia editável');
+    await user.click(screen.getByRole('button', { name: /^Limpar$/ }));
+    expect(screen.getByRole('button', { name: 'Desfazer limpeza' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Limpar tudo' }));
+    await user.click(screen.getByLabelText(/Apagar também preferências/));
+    await user.click(screen.getByRole('button', { name: 'Apagar agora' }));
+    expect(screen.queryByRole('button', { name: 'Desfazer limpeza' })).toBeNull();
+    expect((screen.getByLabelText(/^Perguntas ao destinatário/) as HTMLTextAreaElement).value).toBe('');
+  });
+
+  it('mudar qualquer contexto da revisão invalida o resultado exibido', async () => {
+    const { user } = setup();
+    await openReview(user);
+    typeIn('Texto a revisar', 'A causa raiz foi a falha do servidor.');
+    await user.click(screen.getByRole('button', { name: 'Revisar agora' }));
+    expect(await screen.findByRole('region', { name: 'Resultado da revisão' })).toBeInTheDocument();
+    await user.click(screen.getByLabelText(/Há evidência registrada/));
+    expect(screen.queryByRole('region', { name: 'Resultado da revisão' })).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: 'Revisar agora' }));
+    expect(await screen.findByRole('region', { name: 'Resultado da revisão' })).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Confirmação do usuário'), { target: { value: 'yes' } });
+    expect(screen.queryByRole('region', { name: 'Resultado da revisão' })).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: 'Revisar agora' }));
+    expect(await screen.findByRole('region', { name: 'Resultado da revisão' })).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/Prazo já definido/), { target: { value: '20/10' } });
+    expect(screen.queryByRole('region', { name: 'Resultado da revisão' })).toBeNull();
+  });
+
+  it('"Limpar" no modo de revisão preserva o formulário de geração e permite desfazer', async () => {
+    const { user } = setup();
+    typeIn(/^Perguntas ao destinatário/, 'Pergunta do modo de geração');
+    await openReview(user);
+    typeIn('Texto a revisar', 'Texto em revisão.');
+    await user.click(screen.getByRole('button', { name: /^Limpar$/ }));
+    expect((screen.getByLabelText('Texto a revisar') as HTMLTextAreaElement).value).toBe('');
+    await user.click(screen.getByRole('button', { name: 'Gerar texto' }));
+    expect((screen.getByLabelText(/^Perguntas ao destinatário/) as HTMLTextAreaElement).value).toBe('Pergunta do modo de geração');
+    await user.click(screen.getByRole('button', { name: 'Desfazer limpeza' }));
+    await openReview(user);
+    expect((screen.getByLabelText('Texto a revisar') as HTMLTextAreaElement).value).toBe('Texto em revisão.');
+  });
+
+  it('confirmar a limpeza sem nada preenchido ainda anuncia o resultado', async () => {
+    const { user } = setup();
+    await user.click(screen.getByRole('button', { name: 'Limpar tudo' }));
+    await user.click(screen.getByRole('button', { name: 'Apagar agora' }));
+    expect(document.querySelector('[aria-live="polite"]')?.textContent).toMatch(/Não há conteúdo para limpar/);
+  });
+
+  it('o modo de revisão abre com um tipo voltado ao usuário, coerente com o destinatário padrão', async () => {
+    const { user } = setup();
+    await openReview(user);
+    expect((screen.getByLabelText('Tipo de comunicação') as HTMLSelectElement).value).toBe('progress_update');
+    expect((screen.getByLabelText('Destinatário') as HTMLSelectElement).value).toBe('user');
+  });
+});
+
