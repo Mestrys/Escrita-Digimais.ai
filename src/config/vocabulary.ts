@@ -137,7 +137,9 @@ export const PROMISE_RULES: LexicalRule[] = [
         '\\bnunca mais\\b',
         'n[ãa]o se repetir[áa]',
         '\\b(?:fique|pode ficar|podem ficar) tranquil[oa]s?\\b',
-        '\\bsem (?:nenhum |qualquer )?(?:impacto|risco|custo adicional|perda de dados)',
+        // Só garantias futuras ou enfáticas: o relato de algo que já aconteceu ("realizamos a manutenção sem impacto") não alerta.
+        '\\b(?:ser[áa]|ficar[áa]|vai ser|vai ficar)(?: \\p{L}+){0,2} sem (?:nenhum |qualquer )?(?:impacto|risco|custo adicional|perda de dados)',
+        '\\bsem (?:nenhum|qualquer) (?:impacto|risco|custo adicional|perda de dados)',
         'n[ãa]o haver[áa] (?:novos? )?(?:problemas|impacto|indisponibilidade|falhas|perda)',
         '\\bser[áa] priorizad\\w*',
         'prioridade (?:m[áa]xima|total|absoluta)',

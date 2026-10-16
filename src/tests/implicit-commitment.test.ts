@@ -21,8 +21,8 @@ describe('alerta de compromisso implícito', () => {
     'Fique tranquilo, estamos cuidando.',
     'Pode ficar tranquila.',
     'A mudança será feita sem impacto para a equipe.',
-    'Ação sem risco para os dados.',
-    'A correção é sem custo adicional.',
+    'A ação será feita sem nenhum risco para os dados.',
+    'A correção ficará sem custo adicional.',
     'Não haverá novos problemas após o ajuste.',
     'Não haverá indisponibilidade.',
     'O chamado será priorizado.',
@@ -41,6 +41,10 @@ describe('alerta de compromisso implícito', () => {
     'O chamado foi classificado com prioridade média, conforme o registro.',
     'Aguardamos a conclusão do item acima para seguirmos com o atendimento.',
     'O risco informado pelo usuário foi registrado.',
+    // Relatos de algo já ocorrido, que a primeira versão marcava por engano.
+    'Realizamos a manutenção sem impacto aos usuários.',
+    'O procedimento foi concluído sem risco aos dados.',
+    'Não houve perda de dados.',
   ])('não alerta: %s', (text) => {
     expect(codesOf(text)).not.toContain('implicit_commitment');
   });
