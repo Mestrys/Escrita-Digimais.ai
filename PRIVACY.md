@@ -1,6 +1,6 @@
 # Política de privacidade
 
-Assistente de Textos do Service Desk, versão 0.0.3.
+Assistente de Textos do Service Desk, versão 0.0.4.
 
 ## Resumo
 A extensão funciona inteiramente no navegador do analista. Ela não coleta, não transmite e não vende dados. Não há servidores, telemetria, analytics, pixels ou rastreadores.
