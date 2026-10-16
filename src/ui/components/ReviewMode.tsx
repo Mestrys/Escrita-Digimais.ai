@@ -105,7 +105,7 @@ export function ReviewMode({ form, onChange, profile, result, problem, onReview,
 
         <div className="row">
           <button type="submit" className="primary">Revisar agora</button>
-          <button type="button" onClick={onClear}>Limpar</button>
+          <button type="button" onClick={onClear}>Limpar revisão</button>
         </div>
       </form>
 

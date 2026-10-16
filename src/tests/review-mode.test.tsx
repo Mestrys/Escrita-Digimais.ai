@@ -118,7 +118,7 @@ describe('desfazer limpeza', () => {
     typeIn(/Perguntas ao destinatário/, 'Qual erro aparece na tela');
     await user.click(screen.getByRole('button', { name: 'Gerar prévia' }));
     await screen.findByLabelText('Prévia editável');
-    await user.click(screen.getByRole('button', { name: 'Limpar' }));
+    await user.click(screen.getByRole('button', { name: 'Limpar formulário e prévia' }));
     expect(screen.queryByLabelText('Prévia editável')).toBeNull();
     expect((screen.getByLabelText(/Perguntas ao destinatário/) as HTMLTextAreaElement).value).toBe('');
     await user.click(screen.getByRole('button', { name: 'Desfazer limpeza' }));
@@ -133,7 +133,7 @@ describe('desfazer limpeza', () => {
     typeIn(/Perguntas ao destinatário/, 'Qual erro aparece na tela');
     fireEvent.click(screen.getByRole('button', { name: 'Gerar prévia' }));
     await act(async () => { await vi.advanceTimersByTimeAsync(50); });
-    fireEvent.click(screen.getByRole('button', { name: 'Limpar' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Limpar formulário e prévia' }));
     expect(screen.getByRole('button', { name: 'Desfazer limpeza' })).toBeInTheDocument();
     await act(async () => { await vi.advanceTimersByTimeAsync(UNDO_CLEAR_MS + 100); });
     expect(screen.queryByRole('button', { name: 'Desfazer limpeza' })).toBeNull();
@@ -144,7 +144,7 @@ describe('desfazer limpeza', () => {
     typeIn(/Perguntas ao destinatário/, 'Qual erro aparece na tela');
     await user.click(screen.getByRole('button', { name: 'Gerar prévia' }));
     await screen.findByLabelText('Prévia editável');
-    await user.click(screen.getByRole('button', { name: 'Limpar' }));
+    await user.click(screen.getByRole('button', { name: 'Limpar formulário e prévia' }));
     expect(screen.getByRole('button', { name: 'Desfazer limpeza' })).toBeInTheDocument();
     typeIn(/Perguntas ao destinatário/, 'Outra pergunta');
     expect(screen.queryByRole('button', { name: 'Desfazer limpeza' })).toBeNull();
@@ -162,7 +162,7 @@ describe('desfazer limpeza', () => {
   it('não oferece desfazer quando não havia conteúdo', async () => {
     const { user } = setup();
     await openReview(user);
-    await user.click(screen.getByRole('button', { name: 'Limpar' }));
+    await user.click(screen.getByRole('button', { name: 'Limpar revisão' }));
     expect(screen.queryByRole('button', { name: 'Desfazer limpeza' })).toBeNull();
   });
 });
@@ -174,7 +174,7 @@ describe('acessibilidade do modo de revisão (axe)', () => {
     typeIn('Texto a revisar', 'Como você deveria ter lido, o erro é seu. Garantimos a solução.');
     await user.click(screen.getByRole('button', { name: 'Revisar agora' }));
     await screen.findByRole('region', { name: 'Resultado da revisão' });
-    await user.click(screen.getByRole('button', { name: 'Limpar' }));
+    await user.click(screen.getByRole('button', { name: 'Limpar revisão' }));
     await screen.findByRole('button', { name: 'Desfazer limpeza' });
     const res = await axe.run(document.body, { rules: { 'color-contrast': { enabled: false } } });
     expect(res.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([]);
@@ -187,7 +187,7 @@ describe('correções da revisão de segurança e de código', () => {
     typeIn(/^Perguntas ao destinatário/, 'Qual erro aparece na tela');
     await user.click(screen.getByRole('button', { name: 'Gerar prévia' }));
     await screen.findByLabelText('Prévia editável');
-    await user.click(screen.getByRole('button', { name: /^Limpar$/ }));
+    await user.click(screen.getByRole('button', { name: 'Limpar formulário e prévia' }));
     expect(screen.getByRole('button', { name: 'Desfazer limpeza' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Limpar tudo' }));
     await user.click(screen.getByLabelText(/Apagar também preferências/));
@@ -216,12 +216,12 @@ describe('correções da revisão de segurança e de código', () => {
     expect(screen.queryByRole('region', { name: 'Resultado da revisão' })).toBeNull();
   });
 
-  it('"Limpar" no modo de revisão preserva o formulário de geração e permite desfazer', async () => {
+  it('"Limpar revisão" no modo de revisão preserva o formulário de geração e permite desfazer', async () => {
     const { user } = setup();
     typeIn(/^Perguntas ao destinatário/, 'Pergunta do modo de geração');
     await openReview(user);
     typeIn('Texto a revisar', 'Texto em revisão.');
-    await user.click(screen.getByRole('button', { name: /^Limpar$/ }));
+    await user.click(screen.getByRole('button', { name: 'Limpar revisão' }));
     expect((screen.getByLabelText('Texto a revisar') as HTMLTextAreaElement).value).toBe('');
     await user.click(screen.getByRole('button', { name: 'Gerar texto' }));
     expect((screen.getByLabelText(/^Perguntas ao destinatário/) as HTMLTextAreaElement).value).toBe('Pergunta do modo de geração');

@@ -49,6 +49,8 @@ await page.getByLabel(/^Perguntas ao destinatário/).fill('Qual erro aparece na 
 await page.getByRole('button', { name: 'Gerar prévia', exact: true }).click();
 await page.getByLabel('Prévia editável').waitFor();
 await measure('com prévia, alertas e indicadores');
+await page.getByText('Mais ações', { exact: true }).click();
+await measure('com menu "Mais ações" aberto');
 await page.getByRole('button', { name: 'Comparar com o texto inicial' }).click();
 await measure('com comparação');
 await page.getByRole('button', { name: 'Configurações' }).click();
