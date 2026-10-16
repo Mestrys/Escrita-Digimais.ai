@@ -125,7 +125,14 @@ Desativado por padrão (opção mais segura). Para habilitar: `closureRules.noRe
 Em “Configurações > Perfil de linguagem”. A importação é local e recusa: JSON inválido, arquivo acima de 100 KB, chaves desconhecidas (inclusive `__proto__`), HTML, links, esquemas executáveis, caracteres de controle, placeholders não permitidos e valores fora de faixa. Termos são comparados como texto, nunca como expressão regular. A exportação gera o JSON do perfil efetivo.
 
 ### Política gerenciada (implantação empresarial)
-O esquema está em `public/managed-schema.json`. Exemplo de valor para a chave `languageProfile` (string JSON) via política do Edge (GPO/Intune, `3rdparty > extensions > <id> > policy`). A chave `aiProvider` está reservada e não ativa nenhuma chamada nesta versão.
+O esquema está em `public/managed-schema.json`. Exemplo de valor para a chave `languageProfile` (string JSON) via política do Edge (GPO/Intune, `3rdparty > extensions > <id> > policy`). A chave `profileSigningPublicKeys` (até duas chaves públicas ECDSA P-256, SPKI em base64) faz a extensão exigir perfil assinado: importação sem assinatura válida é recusada e o perfil guardado é reverificado a cada abertura. A chave `aiProvider` está reservada e não ativa nenhuma chamada nesta versão.
+
+### Assinatura de perfil (opcional)
+```
+node scripts/sign-profile.mjs keygen chave-da-org              # cria chave-da-org.private.pem e imprime a chave pública
+node scripts/sign-profile.mjs sign perfil.json chave-da-org.private.pem
+```
+Publique a chave pública em `profileSigningPublicKeys` pela política e distribua o `perfil.assinado.json`. O perfil precisa estar na forma normalizada: parta de um perfil exportado pela extensão. Guarde a chave privada em cofre e fora do repositório (`*.pem` já é ignorado). Para rotacionar, publique a chave nova junto da antiga, reassine e depois remova a antiga.
 
 ## Empacotamento
 `npm run package` executa build, verificação do pacote e gera um `.zip` de `dist/` em `release/`. A verificação (`scripts/verify-dist.mjs`) falha se encontrar permissões extras, CSP insegura, scripts inline, recursos remotos, `eval`, `new Function`, `fetch`, XHR, WebSocket ou `sendBeacon`.

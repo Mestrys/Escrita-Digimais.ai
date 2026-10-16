@@ -52,7 +52,7 @@ describe('persistência', () => {
     const local = new MemoryArea();
     const s = new AppStorage(local, null);
     await expect(s.saveProfile({ ...DEFAULT_PROFILE, maxLength: 1 })).rejects.toThrow();
-    await s.saveProfile(DEFAULT_PROFILE);
+    await s.saveProfile(DEFAULT_PROFILE, 'assinatura');
     await s.savePreferences({ length: 'short' });
     expect(Object.keys(local.data).sort()).toEqual([...ALLOWED_KEYS].sort());
     await s.clearAll();

@@ -14,11 +14,14 @@ interface Props {
   onImport: (text: string) => Promise<string[]>;
   onExport: () => void;
   onResetProfile: () => void;
+  signingRequired: boolean;
 }
 
 const SOURCE_LABEL = { managed: 'política da organização', imported: 'arquivo importado', default: 'padrão da extensão' } as const;
 
-export function SettingsPanel({ prefs, onPrefs, profile, profileSource, onImport, onExport, onResetProfile }: Props) {
+export function SettingsPanel({
+  prefs, onPrefs, profile, profileSource, onImport, onExport, onResetProfile, signingRequired,
+}: Props) {
   const [errors, setErrors] = useState<string[]>([]);
   const [done, setDone] = useState(false);
 
@@ -75,6 +78,7 @@ export function SettingsPanel({ prefs, onPrefs, profile, profileSource, onImport
         <p className="subtle">
           A importação valida o esquema e recusa HTML, links e chaves desconhecidas. Nada é enviado: o arquivo é lido
           apenas neste navegador.
+          {signingRequired && ' A organização exige perfil assinado: arquivos sem assinatura válida são recusados.'}
         </p>
         <div className="row">
           {profileSource !== 'managed' && (

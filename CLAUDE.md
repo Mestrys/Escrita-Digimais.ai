@@ -33,7 +33,7 @@ Atualizar snapshots de template só quando a mudança de texto for intencional: 
 - Sem `fetch`, XHR, WebSocket, sendBeacon, `eval`, `new Function`, CDN ou script inline (ESLint e testes bloqueiam).
 - Persistir apenas preferências (allowlist em `application/preferences.ts`) e perfil validado. Nunca conteúdo de chamado.
 - Credenciais, tokens e chaves bloqueiam a geração; demais dados sensíveis são mascarados com aviso.
-- Perfil importado: só texto simples validado por `config/profile-schema.ts`; termos nunca viram regex.
+- Perfil importado: só texto simples validado por `config/profile-schema.ts`; termos nunca viram regex. Com `profileSigningPublicKeys` na política, só vale perfil assinado (`application/profile-signing.ts`); chave privada nunca no repositório.
 - Nenhum segredo ou chave de API no repositório. Provedor remoto permanece desativado.
 
 ## Definição de pronto

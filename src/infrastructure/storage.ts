@@ -3,6 +3,7 @@ import { validateProfile } from '../config/profile-schema';
 import { DEFAULT_PREFERENCES, sanitizePreferences } from '../application/preferences';
 import type { Preferences } from '../application/preferences';
 import type { LanguageProfile } from '../domain/types';
+import { sanitizeSigningKeys, verifyProfileSignature } from '../application/profile-signing';
 
 /** Subconjunto mínimo de chrome.storage.StorageArea, injetável em testes. */
 export interface StorageArea {
@@ -12,7 +13,11 @@ export interface StorageArea {
   clear?(): Promise<void>;
 }
 
-export const STORAGE_KEYS = { preferences: 'preferences', profile: 'languageProfile' } as const;
+export const STORAGE_KEYS = {
+  preferences: 'preferences',
+  profile: 'languageProfile',
+  profileSignature: 'profileSignature',
+} as const;
 export const ALLOWED_KEYS: string[] = Object.values(STORAGE_KEYS);
 
 function chromeArea(name: 'local' | 'managed'): StorageArea | null {
@@ -47,8 +52,11 @@ export class AppStorage {
     return clean;
   }
 
-  /** Precedência: política gerenciada, perfil importado, padrão. Tudo é revalidado. */
-  async loadProfile(): Promise<{ profile: LanguageProfile; source: 'managed' | 'imported' | 'default' }> {
+  /**
+   * Precedência: política gerenciada, perfil importado, padrão. Tudo é revalidado. Com chaves de assinatura
+   * configuradas, o perfil importado só vale se a assinatura guardada ainda verificar (falha fechada).
+   */
+  async loadProfile(signingKeys: readonly string[] = []): Promise<{ profile: LanguageProfile; source: 'managed' | 'imported' | 'default' }> {
     try {
       const managed = await this.managed?.get('languageProfile');
       const json = managed?.languageProfile;
@@ -64,7 +72,9 @@ export class AppStorage {
       const stored = data?.[STORAGE_KEYS.profile];
       if (stored) {
         const result = validateProfile(stored);
-        if (result.ok) return { profile: result.profile, source: 'imported' };
+        if (result.ok && (await this.signatureAccepted(result.profile, signingKeys))) {
+          return { profile: result.profile, source: 'imported' };
+        }
       }
     } catch {
       /* ignora */
@@ -72,10 +82,21 @@ export class AppStorage {
     return { profile: structuredClone(DEFAULT_PROFILE), source: 'default' };
   }
 
-  async saveProfile(profile: LanguageProfile): Promise<void> {
+  private async signatureAccepted(profile: LanguageProfile, signingKeys: readonly string[]): Promise<boolean> {
+    if (sanitizeSigningKeys([...signingKeys]).length === 0) return true;
+    const data = await this.local?.get(STORAGE_KEYS.profileSignature);
+    const signature = data?.[STORAGE_KEYS.profileSignature];
+    return typeof signature === 'string' && verifyProfileSignature(profile, signature, signingKeys);
+  }
+
+  async saveProfile(profile: LanguageProfile, signature?: string): Promise<void> {
     const check = validateProfile(profile);
     if (!check.ok) throw new Error('Perfil inválido.');
-    await this.local?.set({ [STORAGE_KEYS.profile]: check.profile });
+    await this.local?.set({
+      [STORAGE_KEYS.profile]: check.profile,
+      ...(signature ? { [STORAGE_KEYS.profileSignature]: signature } : {}),
+    });
+    if (!signature) await this.local?.remove(STORAGE_KEYS.profileSignature);
   }
 
   async clearAll(): Promise<void> {
