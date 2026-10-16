@@ -82,4 +82,20 @@ describe('análise do piloto', () => {
     expect(out).toContain('| i.json | 31 | 0 | 19 | sim |');
     expect(out).toContain('Cópias por geração: 3.2%');
   });
+
+  it('resume o rascunho livre e o arquivo de aprendizado, e avisa quando poucas divisões chegam a preencher', () => {
+    const base = person(40, 0, '2026-09-01', '2026-10-20', { draft_split: 20, draft_apply: 6 });
+    const learn = {
+      exportadoEm: '2026-10-20',
+      contadores: { 'fix.result.action': 4, 'fix.summary.ignore': 2, 'acc.opening.pending.1': 5, 'rej.lead.any.0': 3, 'Maria Silva': 9, 'fix.x': 1 },
+    };
+    const out = run(file('g.json', base), file('aprendizado-g.json', learn));
+    expect(out).toContain('Rascunho livre: 20 divisões, 6 formulários preenchidos (30.0% chegam a preencher).');
+    expect(out).toContain('Correções do analista na divisão do rascunho: 6 (1.0 por formulário preenchido).');
+    expect(out).toContain('| result | action | 4 |');
+    expect(out).toContain('Redações mantidas: 5; trocadas: 3.');
+    expect(out).toContain('Chaves ignoradas por não pertencerem à lista fechada: 2.');
+    expect(out).toContain('Menos da metade das divisões do rascunho livre');
+    expect(out).toContain('Arquivos: 1.'); // o arquivo de aprendizado não conta como pessoa
+  });
 });

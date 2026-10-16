@@ -651,6 +651,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
             usage={{ ...usage, policy: usagePolicy, total: usageCounters.total }}
             learn={{ enabled: learning.enabled, locked: learning.locked, total: learning.total }}
             onResetLearning={() => void onResetLearning()}
+            onExportLearning={() => void learning.exportFile()}
             onExportUsage={() => void usageCounters.exportFile()}
             onResetUsage={() => void onResetUsage()}
           />

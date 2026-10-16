@@ -55,7 +55,7 @@ Recarregar no cartão também limpa o estado em memória do painel, o que equiva
 - **Popup:** clique com o botão direito no ícone da extensão e escolha **Inspecionar pop-up** (Inspect popup).
 - **Service worker:** no cartão em `edge://extensions`, clique no link **service worker** em "Inspecionar modos de exibição" (Inspect views).
 - **Erros de execução:** botão **Erros** (Errors) no cartão da extensão.
-- **Dados guardados:** no console do service worker, `await chrome.storage.local.get(null)` deve mostrar apenas `preferences` e, se você importou um perfil, `languageProfile`. Qualquer outra chave indica regressão de privacidade.
+- **Dados guardados:** no console do service worker, `await chrome.storage.local.get(null)` deve mostrar apenas chaves da lista permitida: `preferences`, `languageProfile`, `profileSignature`, `profileOverlay` e, se você ligou as opções opcionais, `usageCounters` (contadores) e `learnedStyle` (preferências de redação, só números). Qualquer outra chave indica regressão de privacidade.
 
 ### 5. Antes de abrir um PR
 ```

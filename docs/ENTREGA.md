@@ -16,10 +16,15 @@ Assistente de Textos do Service Desk, versão 0.0.4. Extensão para Microsoft Ed
 - **Interface** em Material Design 3 com Google Sans Flex local, tema claro e escuro, reflow a 320 px, desfazer de limpeza e anúncio para leitor de tela.
 - **Modo de desenvolvimento** para o Edge e documentação de instalação.
 
+## Distribuição e releases
+- Como a equipe recebe a extensão (piloto manual, loja do Edge com instalação forçada, hospedagem própria): [DISTRIBUICAO.md](DISTRIBUICAO.md), com as decisões que cabem à TI.
+- O zip é reprodutível e a release é publicada por tag (`.github/workflows/release.yml`), com SHA-256 e `SHA256SUMS.txt`.
+- O CI roda a demonstração e o ensaio do piloto em Chromium real contra o zip extraído.
+
 ## O que foi verificado
 | Verificação | Resultado |
 |---|---|
-| Testes automatizados (Vitest, Testing Library, axe-core) | 501 testes em 34 arquivos, todos verdes |
+| Testes automatizados (Vitest, Testing Library, axe-core) | 508 testes em 35 arquivos, todos verdes |
 | Lint, typecheck, build de produção e de desenvolvimento, verificação do pacote | exit 0 |
 | Dependências de produção (`npm audit`) | 0 vulnerabilidades |
 | Permissões do pacote | somente `sidePanel` e `storage`, sem permissão de site |

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { emptyStats, StyleLearner } from '../../application/style-learning';
+import { emptyStats, exportLearning, StyleLearner } from '../../application/style-learning';
 import type { LearnedStats } from '../../application/style-learning';
 import type { UsagePolicy } from '../../application/usage-counters';
 import type { AppStorage } from '../../infrastructure/storage';
@@ -56,6 +56,16 @@ export function useStyleLearning(store: AppStorage, userOptIn: boolean, usagePol
     [remember],
   );
 
+  const exportFile = useCallback(async (): Promise<void> => {
+    const blob = new Blob([exportLearning(await learner.snapshot())], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'aprendizado-de-redacao.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [learner]);
+
   const total = Object.values(stats.counts).reduce((a, b) => a + b, 0);
-  return { enabled, locked, stats, setStats, total, previousShown, setShown, acceptOnce, remember, rememberFixes, reset };
+  return { enabled, locked, stats, setStats, total, previousShown, setShown, acceptOnce, remember, rememberFixes, reset, exportFile };
 }

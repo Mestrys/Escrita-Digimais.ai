@@ -23,6 +23,7 @@ interface Props {
   usage: { enabled: boolean; locked: boolean; policy: UsagePolicy; total: number };
   learn: { enabled: boolean; locked: boolean; total: number };
   onResetLearning: () => void;
+  onExportLearning: () => void;
   onExportUsage: () => void;
   onResetUsage: () => void;
 }
@@ -47,7 +48,7 @@ const SOURCE_LABEL = { managed: 'política da organização', imported: 'arquivo
 
 export function SettingsPanel({
   prefs, onPrefs, profile, profileSource, onImport, onExport, onResetProfile, signingRequired, overlay, onImportOverlay, onRemoveOverlay,
-  usage, learn, onResetLearning, onExportUsage, onResetUsage,
+  usage, learn, onResetLearning, onExportLearning, onExportUsage, onResetUsage,
 }: Props) {
   const [errors, setErrors] = useState<string[]>([]);
   const [done, setDone] = useState(false);
@@ -169,6 +170,7 @@ export function SettingsPanel({
         )}
         <p className="subtle">Observações registradas: {learn.total}</p>
         <div className="row">
+          <button type="button" onClick={onExportLearning}>Exportar aprendizado</button>
           <button type="button" onClick={onResetLearning}>Zerar aprendizado</button>
         </div>
       </fieldset>

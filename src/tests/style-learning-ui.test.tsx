@@ -90,4 +90,10 @@ describe('aprendizado de redação na interface', () => {
     await waitFor(() => expect(local.data.learnedStyle).toBeUndefined());
     expect(await screen.findByText('Observações registradas: 0')).toBeTruthy();
   });
+
+  it('as configurações oferecem exportar o aprendizado', async () => {
+    const { user } = setup({ preferences: { learnStyle: true } });
+    await user.click(screen.getByRole('button', { name: /Configurações/ }));
+    expect(screen.getByRole('button', { name: 'Exportar aprendizado' })).toBeTruthy();
+  });
 });
