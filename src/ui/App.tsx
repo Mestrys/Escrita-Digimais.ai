@@ -13,6 +13,8 @@ import {
 import { DEFAULT_PROFILE } from '../config/language-profile';
 import { exportProfileJson } from '../config/profile-schema';
 import { importProfileText } from '../application/profile-signing';
+import { applyOverlay, parseOverlayJson } from '../config/profile-overlay';
+import type { ProfileOverlay } from '../config/profile-overlay';
 import { reviewText } from '../domain/review';
 import type { ReviewResult } from '../domain/review';
 import { scanText } from '../domain/sensitive';
@@ -79,7 +81,9 @@ interface SavedContent {
 export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigningKeys, copy = copyText, providerFactory = createProvider, now }: AppProps) {
   const store = useMemo(() => storage ?? new AppStorage(), [storage]);
   const [form, setForm] = useState<FormState>(initialForm);
-  const [profile, setProfile] = useState<LanguageProfile>(DEFAULT_PROFILE);
+  const [baseProfile, setProfile] = useState<LanguageProfile>(DEFAULT_PROFILE);
+  const [overlay, setOverlay] = useState<ProfileOverlay | null>(null);
+  const profile = useMemo(() => applyOverlay(baseProfile, overlay), [baseProfile, overlay]);
   const [profileSource, setProfileSource] = useState<'managed' | 'imported' | 'default'>('default');
   const [prefs, setPrefs] = useState<Preferences>(DEFAULT_PREFERENCES);
   const [policy, setPolicy] = useState<AiPolicy>(DISABLED_AI_POLICY);
@@ -113,13 +117,16 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     let alive = true;
     void (async () => {
       const keys = await loadKeys();
-      const [p, loaded, pol] = await Promise.all([store.loadPreferences(), store.loadProfile(keys), loadPolicy()]);
+      const [p, loaded, pol, ov] = await Promise.all([
+        store.loadPreferences(), store.loadProfile(keys), loadPolicy(), store.loadOverlay(),
+      ]);
       if (!alive) return;
       setPrefs(p);
       setProfile(loaded.profile);
       setProfileSource(loaded.source);
       setPolicy(pol);
       setSigningKeys(keys);
+      setOverlay(ov);
       setForm((f) => ({ ...f, techLevel: p.techLevel, formality: p.formality, length: p.length }));
     })();
     return () => {
@@ -390,6 +397,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
       setPrefs(DEFAULT_PREFERENCES);
       setProfile(DEFAULT_PROFILE);
       setProfileSource('default');
+      setOverlay(null);
     }
     setConfirmClear(false);
     setAlsoClearStored(false);
@@ -412,7 +420,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
   };
 
   const onExport = (): void => {
-    const blob = new Blob([exportProfileJson(profile)], { type: 'application/json' });
+    const blob = new Blob([exportProfileJson(baseProfile)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -421,8 +429,24 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     URL.revokeObjectURL(url);
   };
 
+  const onImportOverlay = async (json: string): Promise<string[]> => {
+    const parsed = parseOverlayJson(json);
+    if (!parsed.ok) return parsed.errors;
+    await store.saveOverlay(parsed.overlay);
+    setOverlay(parsed.overlay);
+    return [];
+  };
+
+  const onRemoveOverlay = async (): Promise<void> => {
+    await store.removeOverlay();
+    setOverlay(null);
+    setLive('Camada da equipe removida.');
+  };
+
   const onResetProfile = async (): Promise<void> => {
+    const keepOverlay = overlay;
     await store.clearAll();
+    if (keepOverlay) await store.saveOverlay(keepOverlay);
     const loaded = await store.loadProfile(signingKeys);
     setProfile(loaded.profile);
     setProfileSource(loaded.source);
@@ -558,6 +582,9 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
             onExport={onExport}
             onResetProfile={() => void onResetProfile()}
             signingRequired={signingKeys.length > 0}
+            overlay={overlay}
+            onImportOverlay={onImportOverlay}
+            onRemoveOverlay={() => void onRemoveOverlay()}
           />
         )}
 

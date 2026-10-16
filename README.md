@@ -153,6 +153,13 @@ Publique a chave pública em `profileSigningPublicKeys` pela política e distrib
 ## Licença
 Domínio público (Unlicense). Veja `LICENSE`.
 
+### Camada da equipe (opcional)
+Além do perfil da organização, cada analista pode importar uma camada da equipe em Configurações. A mesclagem é restritiva: a camada só endurece regras, nunca afrouxa. Formato:
+```json
+{ "schemaVersion": 1, "overlayName": "Equipe Redes", "forbiddenTerms": ["gambiarra"], "maxLength": 1500, "closureRules": { "minAttempts": 4 } }
+```
+Campos aceitos: `forbiddenTerms`, `preferredTerms`, `requiredTexts`, `internalDomains` (somados à base), `maxLength` (vale o menor) e, em `closureRules`, `noResponseEnabled` (só desliga), `minAttempts` e `minDaysAfterNotice` (vale o maior) e `requirePriorNotice` (só liga). Saudações, fechamentos, assinatura, modelos, siglas conhecidas e aviso de privacidade são recusados. Como não pode afrouxar nada, a camada não exige assinatura, mesmo quando a organização exige perfil assinado.
+
 ## Decisões registradas
 - Encerramento por ausência de retorno desativado por padrão.
 - Dados pessoais e de infraestrutura são mascarados na prévia (com aviso), mantendo o campo original intacto.
