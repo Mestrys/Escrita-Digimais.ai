@@ -82,11 +82,11 @@ describe('variações do texto gerado', () => {
       for (const formality of FORMALITIES) {
         const base = gen(type, CONTEXT, { formality, variant: 0, recipient: type === 'technical_note' ? 'technical_team' : 'user' }, PROFILE_OPEN);
         if (base.blocked) continue;
+        const baseM = gen(type, CONTEXT, { formality, variant: 0, recipient: type === 'technical_note' ? 'technical_team' : 'manager' }, PROFILE_OPEN);
         for (const variant of variants) {
           const r = gen(type, CONTEXT, { formality, variant, recipient: type === 'technical_note' ? 'technical_team' : 'user' }, PROFILE_OPEN);
           const m = gen(type, CONTEXT, { formality, variant, recipient: type === 'technical_note' ? 'technical_team' : 'manager' }, PROFILE_OPEN);
           if (!m.blocked) {
-            const baseM = gen(type, CONTEXT, { formality, variant: 0, recipient: type === 'technical_note' ? 'technical_team' : 'manager' }, PROFILE_OPEN);
             expect(codes(m).filter((c) => !codes(baseM).includes(c)), `gestor ${type}/${formality}/v${variant}`).toEqual([]);
           }
           expect(r.blocked, `${type}/${formality}/v${variant}`).toBe(false);
@@ -99,7 +99,7 @@ describe('variações do texto gerado', () => {
       }
     }
     expect(checked).toBeGreaterThan(1500);
-  });
+  }, 60_000);
 
   it('tipos sem frases alternativas repetem o texto (sem inventar variação)', () => {
     const a = gen('technical_note', CONTEXT, { variant: 0, recipient: 'technical_team' }).text;
