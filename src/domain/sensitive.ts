@@ -70,7 +70,7 @@ const DETECTORS: Detector[] = [
     category: 'credential',
     blocking: true,
     pattern:
-      /\b(senha|password|passwd|pwd)\b(?:[ \t]+(?:tempor[áa]ria|provis[óo]ria|nova|atual|antiga|de acesso|do usu[áa]rio|da conta|do wi-?fi))?[ \t]*(:|=|é|eh|era|foi|seria|is)[ \t]*(["'“‘]?)([^\s"'”’,;]{3,})/giu,
+      /\b(?:[A-Za-z0-9]+[_-]){0,4}(senha|password|passwd|pwd)(?:[_-][A-Za-z0-9]+){0,3}\b(?:[ \t]+(?:tempor[áa]ria|provis[óo]ria|nova|atual|antiga|de acesso|do usu[áa]rio|da conta|do wi-?fi))?[ \t]*(:|=|é|eh|era|foi|seria|is)[ \t]*(["'“‘]?)([^\s"'”’,;]{3,})/giu,
     valueGroup: 4,
     validate: (m) => {
       const separator = (m[2] ?? '').toLowerCase();
@@ -146,7 +146,7 @@ const DETECTORS: Detector[] = [
     category: 'secret',
     blocking: true,
     pattern:
-      /\b(?:api[_-]?key|apikey|client[_-]?secret|secret|access[_-]?token|auth[_-]?token|refresh[_-]?token|token|chave(?: de api| secreta| privada)?|segredo)\b[ \t]*(:|=|é|eh)[ \t]*(["'“]?)([A-Za-z0-9\-._~+/=]{8,})/giu,
+      /\b(?:[A-Za-z0-9]+[_-]){0,4}(?:api[_-]?key|apikey|client[_-]?secret|secret|access[_-]?token|auth[_-]?token|refresh[_-]?token|token|chave(?: de api| secreta| privada)?|segredo)(?:[_-][A-Za-z0-9]+){0,3}\b[ \t]*(:|=|é|eh)[ \t]*(["'“]?)([A-Za-z0-9\-._~+/=]{8,})/giu,
     valueGroup: 3,
     validate: (m) => {
       const value = m[3] ?? '';
@@ -260,6 +260,8 @@ const DETECTORS: Detector[] = [
     blocking: false,
     pattern:
       /\b[a-z][a-z0-9-]*(?:\.[a-z0-9-]+)*\.(?:local|corp|internal|lan|intra|intranet|localdomain|home)\b|\b(?:srv|svr|dc|fs|sql|db|app|web|vm|ws|nb)[-_][a-z0-9][a-z0-9-]{1,}\b|\b(?:srv|svr|dc|fs|sql)\d{2,}\b/giu,
+    // "DB_PASSWORD=..." é nome de variável de ambiente, não servidor.
+    validate: (m) => !/^\s*[:=]/u.test((m.input ?? '').slice((m.index ?? 0) + m[0].length)),
     reason: 'Nome com padrão de servidor ou domínio interno.',
     action: INFRA_ACTION,
     placeholder: '[nome de servidor omitido]',

@@ -96,3 +96,24 @@ describe('detecção de dados pessoais e infraestrutura', () => {
     expect(Date.now() - t0).toBeLessThan(2000);
   });
 });
+
+describe('credenciais em formato de variável de ambiente', () => {
+  it.each([
+    ['DB_PASSWORD=Sup3rS3cret!', 'credential'],
+    ['ADMIN_PASSWD: Qwerty!2026', 'credential'],
+    ['SECRET_KEY="k3yS3cr3tV4lu3xyz"', 'secret'],
+    ['AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY', 'secret'],
+    ['API_TOKEN=abcd1234efgh5678', 'secret'],
+  ])('bloqueia %s', (text, category) => {
+    const found = scanText(text);
+    expect(found.some((f) => f.category === category && f.blocking)).toBe(true);
+    expect(found.map((f) => f.category)).not.toContain('hostname');
+  });
+
+  it('não confunde menção ao nome da variável com atribuição', () => {
+    expect(scanText('A variável DB_PASSWORD está definida no servidor.').some((f) => f.blocking)).toBe(false);
+    expect(scanText('O token_expirado foi tratado.').some((f) => f.blocking)).toBe(false);
+    expect(scanText('Reinicie o serviço db_backup agora.').map((f) => f.category)).toContain('hostname');
+  });
+});
+
