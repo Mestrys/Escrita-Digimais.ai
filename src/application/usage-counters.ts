@@ -106,11 +106,12 @@ export function effectiveUsageMode(policy: UsagePolicy, userOptIn: boolean): { e
   return { enabled: userOptIn, locked: false };
 }
 
-export function exportCounters(counters: UsageCounters): string {
+export function exportCounters(counters: UsageCounters, now: Date = new Date()): string {
   return JSON.stringify(
     {
       nota: 'Contadores agregados sem conteúdo de chamado. Gerado localmente pela extensão.',
       desde: counters.since,
+      exportadoEm: dayString(now),
       contadores: counters.counts,
     },
     null,

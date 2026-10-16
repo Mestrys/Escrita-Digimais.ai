@@ -19,7 +19,7 @@ Somente em `chrome.storage.local`, neste navegador:
 - **Preferências**: nível técnico, formalidade, tamanho padrão e tempo de limpeza automática.
 - **Perfil de linguagem importado** (opcional): textos institucionais validados, sem dados de chamados. Quando a organização exige assinatura, guarda também o valor da assinatura (texto, sem dados pessoais).
 - **Camada da equipe** (opcional): regras restritivas validadas (termos, limites), sem dados de chamados.
-- **Contadores de uso** (opcional, desligados por padrão): números inteiros por categoria de uma lista fechada, mais a data em que a contagem começou.
+- **Contadores de uso** (opcional, desligados por padrão): números inteiros por categoria de uma lista fechada, mais a data em que a contagem começou. O arquivo exportado inclui também o dia da exportação, gerado no momento de exportar e não guardado.
 
 O texto colado no modo “Revisar texto pronto” segue as mesmas regras do restante do conteúdo. Nenhum conteúdo de chamado, texto gerado, histórico ou dado pessoal é armazenado. O botão “Limpar tudo” permite apagar também o que estiver salvo.
 
