@@ -1,0 +1,93 @@
+name: Release
+
+# Publica a release quando uma tag de versão é criada (por exemplo: git tag v0.0.5 && git push origin v0.0.5).
+# A versão da tag precisa ser igual à do manifest. O zip é reprodutível: o SHA-256 vai nas notas e no arquivo SHA256SUMS.txt.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Gerar e publicar a release
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Conferir a versão da tag
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          manifest="$(node -p "require('./manifest.json').version")"
+          pkg="$(node -p "require('./package.json').version")"
+          echo "tag=$tag manifest=$manifest package=$pkg"
+          # O manifest pode ter 4 partes (0.0.4.0); a tag deve coincidir com ele ou com o package.json.
+          if [ "$tag" != "$manifest" ] || { [ "$pkg" != "$manifest" ] && [ "$pkg.0" != "$manifest" ]; }; then
+            echo "A tag (v$tag), o manifest ($manifest) e o package.json ($pkg) precisam ter a mesma versão." >&2
+            exit 1
+          fi
+
+      - name: Conferir que a tag está na main
+        run: |
+          git fetch --no-tags origin main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "A tag precisa apontar para um commit que já está na main." >&2
+            exit 1
+          fi
+
+      - name: Instalar dependências (lockfile)
+        run: npm ci
+
+      - name: Verificação completa
+        run: npm run check
+
+      - name: Auditoria de dependências de produção
+        run: npm audit --omit=dev --audit-level=moderate
+
+      - name: Empacotar extensão
+        run: node scripts/package.mjs
+
+      - name: Conferir que o zip é reprodutível
+        run: |
+          first="$(sha256sum release/*.zip | cut -d' ' -f1)"
+          node scripts/package.mjs
+          second="$(sha256sum release/*.zip | cut -d' ' -f1)"
+          [ "$first" = "$second" ] || { echo "O zip não é reprodutível." >&2; exit 1; }
+
+      - name: Calcular SHA-256
+        run: |
+          cd release
+          sha256sum *.zip | tee SHA256SUMS.txt
+
+      - name: Publicar release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          zip="$(ls release/*.zip)"
+          sha="$(cut -d' ' -f1 release/SHA256SUMS.txt)"
+          cat > notes.md <<NOTES
+          Pacote de instalação do Assistente de Textos do Service Desk, versão ${GITHUB_REF_NAME#v}, gerado do commit \`${GITHUB_SHA::7}\` da main.
+
+          **SHA-256 do zip:** \`${sha}\`
+
+          Verifique o hash antes de instalar: \`sha256sum -c SHA256SUMS.txt\`. O zip é reprodutível: gerar o mesmo commit de novo produz o mesmo hash.
+
+          Instalação para teste: extraia o zip em uma pasta fixa, abra \`edge://extensions\`, ative o modo do desenvolvedor e use "Carregar sem compactação". Instruções completas em \`docs/DESENVOLVIMENTO-EDGE.md\`. Requer Edge 116 ou superior.
+          NOTES
+          gh release create "$GITHUB_REF_NAME" "$zip" release/SHA256SUMS.txt \
+            --title "Versão ${GITHUB_REF_NAME#v}" --notes-file notes.md --verify-tag
