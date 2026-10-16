@@ -1,15 +1,17 @@
 # Entrega: estado do projeto
 
-Assistente de Textos do Service Desk, versão 0.0.2.0. Extensão para Microsoft Edge que ajuda analistas a redigir textos de chamados. Funciona 100% no navegador, sem rede e sem telemetria. Este documento fecha o desenvolvimento e lista, com dono, o que ainda depende de pessoas.
+Assistente de Textos do Service Desk, versão 0.0.3. Extensão para Microsoft Edge que ajuda analistas a redigir textos de chamados. Funciona 100% no navegador, sem rede e sem telemetria. Este documento fecha o desenvolvimento e lista, com dono, o que ainda depende de pessoas.
 
 ## Estado
-**Funcional e pronto para demonstração.** O pacote `escrita-digimais.ai_v0.0.2.0.zip` instala sozinho no Edge (116 ou superior) e foi exercitado em Chromium real.
+**Funcional e pronto para demonstração.** O pacote `escrita-digimais.ai_v0.0.3.zip` instala sozinho no Edge (116 ou superior) e foi exercitado em Chromium real.
 
 ## O que está incluído
 - **Geração** de 10 tipos de comunicação, com variações determinísticas, perfil de linguagem e limites de tamanho.
 - **Segurança do conteúdo:** credenciais, tokens e chaves bloqueiam a geração e a cópia; dados pessoais e de infraestrutura são mascarados com aviso, desfazer e sem alterar o texto do analista.
 - **Revisão de texto pronto** com alertas de tom, de compromisso implícito, de prazo, de causa sem evidência, de siglas e de tamanho.
 - **Perfil e política:** perfil importável e validado; política gerenciada; assinatura opcional de perfil (ECDSA P-256) com reverificação a cada abertura; camada da equipe que só restringe regras.
+- **Redação natural** (padrão para texto a pessoas): voz da equipe, frases de ligação, saudação com o primeiro nome e catálogo de 4 redações por ponto; o estilo Estruturada preserva a redação anterior. Ver `docs/MELHORIAS-REDACAO.md`.
+- **Aprendizado local de preferência** (opcional, desligado por padrão): só contagens inteiras, zerável. **Rascunho livre**: cola a anotação, a extensão sugere o campo de cada trecho e o analista confere antes de preencher. Treinado só com exemplos fictícios; a taxa de acerto real será medida no piloto (`docs/AVALIACAO-RASCUNHO.md`).
 - **Contadores de uso** opcionais (desligados por padrão), só numéricos, exportáveis e analisáveis.
 - **Interface** em Material Design 3 com Google Sans Flex local, tema claro e escuro, reflow a 320 px, desfazer de limpeza e anúncio para leitor de tela.
 - **Modo de desenvolvimento** para o Edge e documentação de instalação.
@@ -17,7 +19,7 @@ Assistente de Textos do Service Desk, versão 0.0.2.0. Extensão para Microsoft 
 ## O que foi verificado
 | Verificação | Resultado |
 |---|---|
-| Testes automatizados (Vitest, Testing Library, axe-core) | 423 testes em 28 arquivos, todos verdes |
+| Testes automatizados (Vitest, Testing Library, axe-core) | 495 testes em 34 arquivos, todos verdes |
 | Lint, typecheck, build de produção e de desenvolvimento, verificação do pacote | exit 0 |
 | Dependências de produção (`npm audit`) | 0 vulnerabilidades |
 | Permissões do pacote | somente `sidePanel` e `storage`, sem permissão de site |
