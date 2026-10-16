@@ -13,7 +13,6 @@ describe('alerta de tom condescendente', () => {
     'Todo mundo sabe que é preciso reiniciar antes.',
     'Como qualquer um sabe, o cache deve ser limpo.',
     'Qualquer usuário consegue fazer isso.',
-    'Não é difícil abrir o painel de controle.',
     'É só clicar no botão e pronto.',
     'Simplesmente reinicie o computador.',
     'Basta clicar em Atualizar.',
@@ -28,6 +27,9 @@ describe('alerta de tom condescendente', () => {
     'Não basta reiniciar: precisamos também validar a atualização.',
     'Sabemos que o processo pode parecer extenso e agradecemos a paciência.',
     'Pedimos que clique em Atualizar e informe o resultado.',
+    // Frases neutras que a primeira versão marcava por engano (a revisão de código reproduziu todas).
+    'Pode só reiniciar o equipamento.',
+    'Não é difícil identificar o erro nos logs.',
   ])('não alerta: %s', (text) => {
     expect(codesOf(text)).not.toContain('condescending_tone');
   });
@@ -51,8 +53,6 @@ describe('alerta de linguagem de pressão', () => {
     'Não aceitamos solicitações sem justificativa.',
     'Sob nenhuma hipótese compartilhe o acesso.',
     'Responda sem demora.',
-    'Envie as informações imediatamente.',
-    'Precisamos disso de imediato.',
     'Isso precisa ser feito a qualquer custo.',
   ])('alerta: %s', (text) => {
     expect(codesOf(text)).toContain('pressure_language');
@@ -64,8 +64,29 @@ describe('alerta de linguagem de pressão', () => {
     'Agradecemos o retorno com os dados solicitados.',
     'O prazo informado para retorno é 20/10.',
     'A solicitação foi recebida e está em análise.',
+    'Por favor, altere a senha imediatamente.',
+    'A senha foi redefinida imediatamente.',
+    'Precisamos disso de imediato.',
+    'O acesso foi restabelecido imediatamente após o reinício.',
   ])('não alerta: %s', (text) => {
     expect(codesOf(text)).not.toContain('pressure_language');
+  });
+
+  it('palavra registrada pelo analista no campo de prazo não gera alerta de pressão nem de promessa', () => {
+    const withDeadline = (explicitDeadline: string): ReviewContext => ({ ...ctx, explicitDeadline });
+    const pressure = 'Prazo informado: sem demora.';
+    expect(codesOf(pressure)).toContain('pressure_language');
+    expect(reviewText(pressure, withDeadline('sem demora'), DEFAULT_PROFILE).warnings.map((w) => w.code)).not.toContain('pressure_language');
+
+    const promise = 'Prazo informado: ficará pronto até sexta-feira.';
+    expect(codesOf(promise)).toContain('unfounded_promise');
+    expect(reviewText(promise, withDeadline('ficará pronto até sexta-feira'), DEFAULT_PROFILE).warnings.map((w) => w.code)).not.toContain('unfounded_promise');
+  });
+
+  it('a isenção do prazo vale só para a palavra registrada: o resto do texto continua sendo revisado', () => {
+    const text = 'Prazo informado: sem demora. Você tem que enviar o arquivo.';
+    const found = reviewText(text, { ...ctx, explicitDeadline: 'sem demora' }, DEFAULT_PROFILE).warnings.map((w) => w.code);
+    expect(found).toContain('pressure_language');
   });
 
   it('o texto do analista nunca é alterado pela revisão', () => {

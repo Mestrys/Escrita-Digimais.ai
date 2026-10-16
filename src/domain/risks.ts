@@ -53,8 +53,17 @@ function excerptOf(text: string, match: RegExpMatchArray | null, radius = 24): s
 
 function applyLexical(text: string, rules: LexicalRule[], out: Warning[], skip?: (m: RegExpMatchArray) => boolean): void {
   for (const rule of rules) {
-    const m = rule.pattern.exec(text);
-    if (!m || skip?.(m)) continue;
+    // Considera todas as ocorrências e usa a primeira que não é isenta: uma palavra isenta (por exemplo, a do campo
+    // de prazo) não esconde outra ocorrência da mesma regra mais adiante no texto.
+    const all = rule.pattern.global ? rule.pattern : new RegExp(rule.pattern.source, `${rule.pattern.flags}g`);
+    let m: RegExpMatchArray | undefined;
+    for (const candidate of text.matchAll(all)) {
+      if (!skip?.(candidate)) {
+        m = candidate;
+        break;
+      }
+    }
+    if (!m) continue;
     out.push({
       code: rule.code,
       severity: rule.severity,
@@ -81,9 +90,12 @@ export function detectTextRisks(text: string, ctx: ReviewContext, profile: Langu
   const closureType = ctx.type === 'closure_resolved' || ctx.type === 'closure_no_response';
 
   // ---- Linguagem, culpa e hostilidade
-  applyLexical(text, BLAME_RULES, out);
-  applyLexical(text, STYLE_RULES, out, (m) => Boolean(ctx.explicitDeadline && ctx.explicitDeadline.toLowerCase().includes(m[0].toLowerCase())));
-  applyLexical(text, PROMISE_RULES, out);
+  // Palavra que o próprio analista registrou no campo de prazo não gera alerta de estilo, pressão nem promessa.
+  const inDeadline = (m: RegExpMatchArray): boolean =>
+    Boolean(ctx.explicitDeadline && ctx.explicitDeadline.toLowerCase().includes(m[0].toLowerCase()));
+  applyLexical(text, BLAME_RULES, out, inDeadline);
+  applyLexical(text, STYLE_RULES, out, inDeadline);
+  applyLexical(text, PROMISE_RULES, out, inDeadline);
   applyLexical(text, CERTAINTY_RULES, out);
 
   const emoji = /\p{Extended_Pictographic}/u.exec(text);
