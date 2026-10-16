@@ -59,6 +59,7 @@ describe('persistência', () => {
     const ov = validateOverlay({ schemaVersion: 1, overlayName: 'Equipe', forbiddenTerms: ['x'] });
     if (ov.ok) await s.saveOverlay(ov.overlay);
     await s.saveCounters(increment(emptyCounters('2026-10-15'), 'copy'));
+    await s.saveLearning({ version: 1, counts: { 'acc.lead.any.1': 1 } });
     expect(Object.keys(local.data).sort()).toEqual([...ALLOWED_KEYS].sort());
     await s.clearAll();
     expect(local.data).toEqual({});

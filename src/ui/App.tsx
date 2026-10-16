@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { emptyContent, initialForm, TEXT_FORM_FIELDS, toGenerationInput } from '../application/form';
 import type { FormState, TextFormField } from '../application/form';
 import { DEFAULT_PREFERENCES } from '../application/preferences';
+import { acceptedEvents, emptyStats, preferredIndexes, rejectedEvents, StyleLearner } from '../application/style-learning';
+import type { LearnedStats } from '../application/style-learning';
 import {
   effectiveUsageMode, exportCounters, generationKeys, timeBucket, UsageRecorder,
 } from '../application/usage-counters';
@@ -95,6 +97,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
   const [signingKeys, setSigningKeys] = useState<string[]>([]);
   const [usagePolicy, setUsagePolicy] = useState<UsagePolicy>('optional');
   const [usageTotal, setUsageTotal] = useState(0);
+  const [learned, setLearned] = useState<LearnedStats>(emptyStats);
   const [result, setResult] = useState<GenerationResult | null>(null);
   const [text, setText] = useState('');
   const [initialText, setInitialText] = useState('');
@@ -126,6 +129,21 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
   );
   const usage = effectiveUsageMode(usagePolicy, prefs.usageCounters);
   useEffect(() => recorder.setEnabled(usage.enabled), [recorder, usage.enabled]);
+  // Aprendizado de redação: opt-in do analista, desligado por política quando a organização proíbe contadores locais.
+  const learning = { enabled: prefs.learnStyle && usagePolicy !== 'off', locked: usagePolicy === 'off' };
+  const learner = useMemo(
+    () => new StyleLearner({ load: () => store.loadLearning(), save: (s) => store.saveLearning(s) }),
+    [store],
+  );
+  useEffect(() => learner.setEnabled(learning.enabled), [learner, learning.enabled]);
+  const shownChoices = useRef<GenerationResult['choices']>(undefined);
+  const acceptedAt = useRef(0);
+  const remember = useCallback(
+    (events: Parameters<StyleLearner['record']>[0]): void => {
+      void learner.record(events).then(() => learner.snapshot()).then(setLearned);
+    },
+    [learner],
+  );
 
   useEffect(() => {
     let alive = true;
@@ -142,6 +160,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
       setSigningKeys(keys);
       setOverlay(ov);
       setUsagePolicy(usagePol);
+      setLearned(await store.loadLearning());
       setForm((f) => ({ ...f, techLevel: p.techLevel, formality: p.formality, length: p.length, textStyle: p.textStyle }));
     })();
     return () => {
@@ -329,8 +348,14 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     setBusy(true);
     setCopied('none');
     const provider = providerFactory(policy);
-    const outcome = await generateWithFallback(provider, { input: toGenerationInput(next), profile, now: now?.() });
+    const input = toGenerationInput(next);
+    if (learning.enabled) input.settings.learned = preferredIndexes(learned, next.type, next.formality);
+    const outcome = await generateWithFallback(provider, { input, profile, now: now?.() });
     const r = outcome.result;
+    if (isVariant && shownChoices.current && r.choices) {
+      remember(rejectedEvents(shownChoices.current, r.choices, next.type, next.formality));
+    }
+    shownChoices.current = r.choices;
     setResult(outcome.notice ? { ...r, warnings: [...r.warnings, outcome.notice] } : r);
     setText(r.text);
     setInitialText(r.text);
@@ -366,6 +391,10 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     const ok = await copy(text);
     setCopied(ok ? 'ok' : 'fail');
     if (ok) void recorder.record(['copy', `time_to_copy.${timeBucket(Date.now() - generatedAt.current)}`]);
+    if (ok && result?.choices && acceptedAt.current !== generatedAt.current) {
+      acceptedAt.current = generatedAt.current;
+      remember(acceptedEvents(result.choices, form.type, form.formality));
+    }
     setLive(ok ? 'Texto copiado.' : 'Não foi possível copiar. Selecione o texto e copie manualmente.');
   };
 
@@ -477,6 +506,13 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     a.download = 'contadores-de-uso.json';
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const onResetLearning = async (): Promise<void> => {
+    await learner.snapshot();
+    await store.resetLearning();
+    setLearned(emptyStats());
+    setLive('Preferências de redação zeradas.');
   };
 
   const onResetUsage = async (): Promise<void> => {
@@ -629,6 +665,8 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
             onImportOverlay={onImportOverlay}
             onRemoveOverlay={() => void onRemoveOverlay()}
             usage={{ ...usage, policy: usagePolicy, total: usageTotal }}
+            learn={{ ...learning, total: Object.values(learned.counts).reduce((a, b) => a + b, 0) }}
+            onResetLearning={() => void onResetLearning()}
             onExportUsage={() => void onExportUsage()}
             onResetUsage={() => void onResetUsage()}
           />

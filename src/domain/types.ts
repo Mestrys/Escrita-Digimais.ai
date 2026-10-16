@@ -24,6 +24,18 @@ export type Formality = (typeof FORMALITIES)[number];
 export const LENGTHS = ['short', 'standard', 'detailed'] as const;
 export type LengthMode = (typeof LENGTHS)[number];
 
+export const PHRASE_SLOTS = ['opening', 'closing', 'courtesy', 'lead'] as const;
+/** Pontos do texto em que há mais de uma redação possível: abertura, fecho do tipo, cortesia e frase de ligação. */
+export type PhraseSlot = (typeof PHRASE_SLOTS)[number];
+export interface PhraseChoice {
+  index: number;
+  size: number;
+}
+/** Redação efetivamente usada em cada ponto de um texto gerado (só índices, nunca o texto). */
+export type PhraseChoices = Partial<Record<PhraseSlot, PhraseChoice>>;
+/** Índice preferido por ponto, aprendido localmente; faz o papel da "variação 0". */
+export type PreferredIndexes = Partial<Record<PhraseSlot, number>>;
+
 export const TEXT_STYLES = ['natural', 'structured'] as const;
 /** Natural: frases de ligação e voz da equipe. Estruturado: rótulos fixos, como nas versões anteriores. */
 export type TextStyle = (typeof TEXT_STYLES)[number];
@@ -65,6 +77,8 @@ export interface GenerationSettings {
   variant?: number;
   /** Padrão: natural. */
   style?: TextStyle;
+  /** Preferências aprendidas localmente (opcionais). Mudam só qual redação vem primeiro. */
+  learned?: PreferredIndexes;
 }
 
 export interface GenerationInput {
@@ -161,6 +175,8 @@ export interface GenerationResult {
   blocked: boolean;
   blockReason?: BlockReason;
   sensitiveFindings: SensitiveFinding[];
+  /** Redação usada em cada ponto; ausente quando o texto foi bloqueado. */
+  choices?: PhraseChoices;
   meta: { engine: string; profileVersion: string; templatesVersion: string };
 }
 

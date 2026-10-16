@@ -4,7 +4,7 @@ import { FIXED_PHRASES, LABEL_OVERRIDES, NATURAL_EXPECTED_ACTION, NATURAL_LEADS 
 import type { ResolvedTemplates } from '../config/templates';
 import type { ClassifiedContext } from './classify';
 import { capitalizeFirst, ensureQuestion, ensureTerminalPunctuation, lowerFirst, stripTerminalPunctuation } from './text-utils';
-import type { GenerationSettings, LabelKey, LanguageProfile } from './types';
+import type { GenerationSettings, LabelKey, LanguageProfile, PhraseChoices } from './types';
 import { isoToBr } from './validators';
 import { startsWithTeamVerb } from './voice';
 
@@ -22,6 +22,8 @@ export interface PlannedSection {
 
 export interface MessagePlan {
   sections: PlannedSection[];
+  /** Redação usada em cada ponto com mais de uma opção (só índices). */
+  choices?: PhraseChoices;
 }
 
 const LABEL_KEY: Partial<Record<SectionKind, LabelKey>> = {
@@ -128,11 +130,15 @@ export function buildPlan(
   const openingPool = templates.openings[type][formality];
   const typeClosingPool = templates.typeClosings[type][formality];
   const courtesyPool = profile.closings[formality];
-  const [openingIdx, typeClosingIdx, courtesyIdx] = variantIndexes(variant, [
-    openingPool.length,
-    typeClosingPool.length,
-    courtesyPool.length,
-  ]);
+  const learned = settings.learned ?? {};
+  const withBase = (digit: number, size: number, base: number | undefined): number =>
+    size > 1 ? (digit + Math.max(0, Math.trunc(base ?? 0))) % size : 0;
+  const [d0, d1, d2] = variantIndexes(variant, [openingPool.length, typeClosingPool.length, courtesyPool.length]);
+  const openingIdx = withBase(d0 ?? 0, openingPool.length, learned.opening);
+  const typeClosingIdx = withBase(d1 ?? 0, typeClosingPool.length, learned.closing);
+  const courtesyIdx = withBase(d2 ?? 0, courtesyPool.length, learned.courtesy);
+  /** A frase de ligação segue a variação, a partir da preferência aprendida. */
+  const leadVariant = (learned.lead ?? 0) + variant;
   const record = isRecordStyle(type, recipient);
   const vars = { organization: profile.organizationName, destination: c.destinationTeam ?? '' };
   const natural = isNaturalStyle(settings, profile);
@@ -142,10 +148,10 @@ export function buildPlan(
     const overrides = LABEL_OVERRIDES[type] ?? {};
     for (const [key, pool] of Object.entries(NATURAL_LEADS) as [LabelKey, readonly string[]][]) {
       const override = overrides[key];
-      if (override === undefined || override === base[key]) labels[key] = pick(pool, variant) ?? labels[key];
+      if (override === undefined || override === base[key]) labels[key] = pick(pool, leadVariant) ?? labels[key];
     }
     if (overrides.expected_action === undefined) {
-      labels.expected_action = pick(NATURAL_EXPECTED_ACTION[recipient === 'manager' ? 'manager' : 'person'], variant) ?? labels.expected_action;
+      labels.expected_action = pick(NATURAL_EXPECTED_ACTION[recipient === 'manager' ? 'manager' : 'person'], leadVariant) ?? labels.expected_action;
     }
   }
 
@@ -164,12 +170,12 @@ export function buildPlan(
         return c.summary ? { text: sentence(c.summary) } : undefined;
       case 'actions_done': {
         if (!c.actionsDone.length) return undefined;
-        const flow = natural ? flowingActions(c.actionsDone, false, variant) : undefined;
+        const flow = natural ? flowingActions(c.actionsDone, false, leadVariant) : undefined;
         return flow ? { text: flow, flowing: true } : { items: c.actionsDone.map(sentence) };
       }
       case 'actions_planned': {
         if (!c.actionsPlanned.length) return undefined;
-        const flow = natural ? flowingActions(c.actionsPlanned, true, variant) : undefined;
+        const flow = natural ? flowingActions(c.actionsPlanned, true, leadVariant) : undefined;
         return flow ? { text: flow, flowing: true } : { items: c.actionsPlanned.map(sentence) };
       }
       case 'result':
@@ -246,5 +252,11 @@ export function buildPlan(
     const { flowing, ...rest } = body;
     sections.push({ kind, label: key && !flowing ? labels[key] : undefined, ...rest });
   }
-  return { sections };
+  const has = (kind: SectionKind): boolean => sections.some((s) => s.kind === kind);
+  const choices: PhraseChoices = {};
+  if (has('opening') && openingPool.length > 1) choices.opening = { index: openingIdx, size: openingPool.length };
+  if (has('type_closing') && typeClosingPool.length > 1) choices.closing = { index: typeClosingIdx, size: typeClosingPool.length };
+  if (has('courtesy') && courtesyPool.length > 1) choices.courtesy = { index: courtesyIdx, size: courtesyPool.length };
+  if (natural) choices.lead = { index: ((leadVariant % 2) + 2) % 2, size: 2 };
+  return { sections, choices };
 }

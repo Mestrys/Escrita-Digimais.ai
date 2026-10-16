@@ -202,6 +202,7 @@ export function generate(
     quality: scoreQuality(warnings),
     blocked: false,
     sensitiveFindings: findings,
+    choices: plan.choices,
     meta: meta(profile),
   };
 }

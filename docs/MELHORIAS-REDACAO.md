@@ -46,7 +46,15 @@ Aprender com o conteúdo dos chamados é incompatível com as regras não negoci
 - Nenhuma regressão nos testes de dados sensíveis, prazo, compromisso implícito e encerramento.
 - Alvo sugerido: pelo menos 60% dos textos copiados sem edição manual no estilo Natural, a confirmar com o piloto.
 
+## 3.1 Opção A: implementada (aprovada)
+- **Sinais**: copiar o texto = "mantida" para cada ponto com mais de uma redação (abertura, fecho do tipo, cortesia, frase de ligação); "Outra variação" = "trocada", só para os pontos cuja redação mudou.
+- **Armazenamento**: `learnedStyle`, contadores inteiros em chaves fechadas `acc|rej.<ponto>.<escopo>.<índice>`; sanitizados na leitura e na gravação; incluídos em "Limpar tudo".
+- **Efeito**: com saldo líquido de pelo menos 3 (mantidas menos trocadas) para uma redação que não é a padrão, ela passa a ser a "variação 0" daquele tipo ou formalidade. A variação continua girando a partir dela.
+- **Esquecimento**: ao chegar a 60, as contagens do mesmo ponto e escopo são divididas por dois.
+- **Controle**: opt-in em Configurações, botão "Zerar aprendizado", desligado quando a política `usageCounters` é `off`.
+- **Fora do alcance, de propósito**: não lê nem guarda o que o analista edita no texto; não altera regras de segurança, bloqueios ou alertas.
+
 ## 4. Decisões que cabem ao usuário
-- D-IA-1: aprovar a opção A (preferência local) para a próxima fase.
+- D-IA-1: opção A aprovada e implementada (seção 3.1).
 - D-IA-2: autorizar o uso de amostras reais anonimizadas para treinar a opção B.
 - D-IA-3: manter a opção C fora do escopo (recomendado).

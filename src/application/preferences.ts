@@ -10,6 +10,8 @@ export interface Preferences {
   autoClearMinutes: number;
   /** Opt-in para contadores de uso agregados e sem conteúdo (padrão: desligado). */
   usageCounters: boolean;
+  /** Opt-in: aprende localmente qual redação pronta o analista mantém (só índices; padrão: desligado). */
+  learnStyle: boolean;
 }
 
 export const AUTO_CLEAR_OPTIONS = [0, 5, 15, 30] as const;
@@ -21,6 +23,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   textStyle: 'natural',
   autoClearMinutes: 15,
   usageCounters: false,
+  learnStyle: false,
 };
 
 export const PREFERENCE_KEYS = Object.keys(DEFAULT_PREFERENCES) as (keyof Preferences)[];
@@ -38,5 +41,6 @@ export function sanitizePreferences(raw: unknown): Preferences {
     out.autoClearMinutes = r.autoClearMinutes;
   }
   if (typeof r.usageCounters === 'boolean') out.usageCounters = r.usageCounters;
+  if (typeof r.learnStyle === 'boolean') out.learnStyle = r.learnStyle;
   return out;
 }

@@ -21,6 +21,8 @@ interface Props {
   onImportOverlay: (text: string) => Promise<string[]>;
   onRemoveOverlay: () => void;
   usage: { enabled: boolean; locked: boolean; policy: UsagePolicy; total: number };
+  learn: { enabled: boolean; locked: boolean; total: number };
+  onResetLearning: () => void;
   onExportUsage: () => void;
   onResetUsage: () => void;
 }
@@ -45,7 +47,7 @@ const SOURCE_LABEL = { managed: 'política da organização', imported: 'arquivo
 
 export function SettingsPanel({
   prefs, onPrefs, profile, profileSource, onImport, onExport, onResetProfile, signingRequired, overlay, onImportOverlay, onRemoveOverlay,
-  usage, onExportUsage, onResetUsage,
+  usage, learn, onResetLearning, onExportUsage, onResetUsage,
 }: Props) {
   const [errors, setErrors] = useState<string[]>([]);
   const [done, setDone] = useState(false);
@@ -142,6 +144,32 @@ export function SettingsPanel({
         <div className="row">
           <button type="button" onClick={onExportUsage}>Exportar contadores</button>
           <button type="button" onClick={onResetUsage}>Zerar contadores</button>
+        </div>
+      </fieldset>
+
+      <fieldset className="stack">
+        <legend className="legend">Aprender minhas preferências de redação (opcional)</legend>
+        <p className="subtle">
+          Quando ligado, a extensão passa a mostrar primeiro as aberturas, fechos e frases de ligação que você mantém e
+          a evitar as que você troca. Guarda apenas números (qual das redações prontas foi usada), nunca o que você
+          digita nem o texto gerado. Fica somente neste navegador e você pode zerar a qualquer momento.
+        </p>
+        {learn.locked ? (
+          <p role="status">Desligado pela política da organização. Não é possível alterar aqui.</p>
+        ) : (
+          <div className="row">
+            <input
+              id="pref-learn"
+              type="checkbox"
+              checked={prefs.learnStyle}
+              onChange={(e) => onPrefs({ learnStyle: e.target.checked })}
+            />
+            <label htmlFor="pref-learn">Aprender com as redações que eu mantenho</label>
+          </div>
+        )}
+        <p className="subtle">Observações registradas: {learn.total}</p>
+        <div className="row">
+          <button type="button" onClick={onResetLearning}>Zerar aprendizado</button>
         </div>
       </fieldset>
 
