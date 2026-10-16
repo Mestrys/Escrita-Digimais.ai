@@ -100,7 +100,7 @@ A interface segue o Material Design 3: papéis de cor tonais (tema claro e escur
 4. “Gerar prévia”. Se faltar algo essencial, a extensão lista perguntas objetivas e destaca os campos.
 5. Revise e edite a prévia. “Revisar novamente” reavalia o texto editado. “Comparar com o texto inicial” mostra as diferenças.
 6. “Copiar texto”. Em seguida, a extensão oferece limpar o conteúdo.
-7. Limpou sem querer? “Desfazer limpeza” fica disponível por 30 segundos e restaura o conteúdo. Depois disso, ele é descartado da memória. A limpeza por inatividade nunca é desfeita, e “Limpar tudo” com a opção de apagar os dados salvos também descarta a possibilidade de desfazer. No modo “Revisar texto pronto”, “Limpar” apaga só a revisão e preserva o formulário de geração.
+7. Limpou sem querer? “Desfazer limpeza” fica disponível por 30 segundos e restaura o conteúdo. Depois disso, ele é descartado da memória. A limpeza por inatividade nunca é desfeita, e “Limpar tudo” com a opção de apagar os dados salvos também descarta a possibilidade de desfazer. Os botões de limpar têm um escopo cada: “Limpar tudo” (cabeçalho, com confirmação), “Limpar formulário e prévia” (em “Mais ações”, com desfazer) e, no modo “Revisar texto pronto”, “Limpar revisão”, que apaga só a revisão e preserva o formulário de geração.
 
 ### Revisar um texto pronto
 O botão “Revisar texto pronto” abre um modo só de revisão: cole um texto que você já escreveu, escolha o tipo e o destinatário e receba alertas, sugestões e indicadores pelas mesmas regras locais. O texto nunca é alterado, enviado ou salvo. O contexto opcional (evidência registrada, confirmação do usuário, prazo já definido) evita alertas indevidos, porque o revisor não vê o chamado.

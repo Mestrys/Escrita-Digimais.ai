@@ -25,6 +25,22 @@ interface Props {
   onResetUsage: () => void;
 }
 
+function overlayRules(o: ProfileOverlay): string[] {
+  const plural = (n: number, one: string, many: string): string => `${n} ${n === 1 ? one : many}`;
+  const lines: string[] = [];
+  if (o.forbiddenTerms) lines.push(`${plural(o.forbiddenTerms.length, 'termo proibido', 'termos proibidos')}`);
+  if (o.preferredTerms) lines.push(`${plural(o.preferredTerms.length, 'termo preferido', 'termos preferidos')}`);
+  if (o.requiredTexts) lines.push(`${plural(o.requiredTexts.length, 'texto obrigatório', 'textos obrigatórios')}`);
+  if (o.internalDomains) lines.push(`${plural(o.internalDomains.length, 'domínio interno', 'domínios internos')}`);
+  if (o.maxLength !== undefined) lines.push(`Tamanho máximo de até ${o.maxLength} caracteres (vale o menor)`);
+  const c = o.closureRules;
+  if (c?.noResponseEnabled === false) lines.push('Encerramento por ausência de retorno desligado');
+  if (c?.minAttempts !== undefined) lines.push(`Pelo menos ${c.minAttempts} tentativas antes de encerrar por ausência de retorno`);
+  if (c?.requirePriorNotice === true) lines.push('Aviso prévio obrigatório antes de encerrar por ausência de retorno');
+  if (c?.minDaysAfterNotice !== undefined) lines.push(`Pelo menos ${c.minDaysAfterNotice} dias após o aviso prévio`);
+  return lines.length > 0 ? lines : ['Nenhuma regra além do nome da equipe'];
+}
+
 const SOURCE_LABEL = { managed: 'política da organização', imported: 'arquivo importado', default: 'padrão da extensão' } as const;
 
 export function SettingsPanel({
@@ -61,7 +77,11 @@ export function SettingsPanel({
     <section aria-labelledby="settings-title" className="stack">
       <h2 id="settings-title">Configurações</h2>
       <fieldset className="stack">
-        <legend className="legend">Preferências (únicos dados salvos neste navegador)</legend>
+        <legend className="legend">Preferências de uso</legend>
+        <p className="subtle">
+          Este navegador guarda apenas preferências, o perfil importado (com a assinatura, se exigida), a camada da equipe
+          e os contadores de uso, se ligados. Conteúdo de chamado nunca é guardado.
+        </p>
         <div className="field">
           <label htmlFor="pref-tech">Nível técnico padrão</label>
           <select id="pref-tech" value={prefs.techLevel} onChange={(e) => onPrefs({ techLevel: e.target.value as Preferences['techLevel'] })}>
@@ -159,9 +179,14 @@ export function SettingsPanel({
           saudações, assinatura nem modelos, e nunca afrouxa o perfil da organização.
         </p>
         {overlay ? (
-          <p>
-            Camada ativa: <strong>{overlay.overlayName}</strong>.
-          </p>
+          <>
+            <p>
+              Camada ativa: <strong>{overlay.overlayName}</strong>.
+            </p>
+            <ul className="subtle" aria-label="Regras acrescentadas pela camada">
+              {overlayRules(overlay).map((line) => <li key={line}>{line}</li>)}
+            </ul>
+          </>
         ) : (
           <p className="subtle">Nenhuma camada ativa.</p>
         )}

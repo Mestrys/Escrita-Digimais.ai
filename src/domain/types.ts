@@ -75,6 +75,8 @@ export interface Warning {
   field?: ContextField;
   /** Sempre mascarado. Nunca contém o dado sensível original. */
   excerpt?: string;
+  /** Trecho exato que acionou a regra, sempre uma parte de `excerpt`. Permite destacar só o gatilho. */
+  trigger?: string;
   dimension?: QualityDimension;
   penalty?: number;
 }

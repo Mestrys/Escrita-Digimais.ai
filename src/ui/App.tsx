@@ -568,7 +568,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
           tokens ou dados pessoais desnecessários.
         </p>
 
-        <div className="row" role="group" aria-label="Modo de uso">
+        <div className="segmented" role="group" aria-label="Modo de uso">
           <button type="button" className={mode === 'generate' ? 'primary' : undefined} aria-pressed={mode === 'generate'} onClick={() => setMode('generate')}>
             Gerar texto
           </button>
@@ -776,10 +776,15 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
                 <button type="button" className="primary" onClick={() => void onCopy()} disabled={copyBlocked}>Copiar texto</button>
                 <button type="button" onClick={onReview}>Revisar novamente</button>
                 <button type="button" onClick={onVariant} disabled={busy}>Outra variação</button>
-                <button type="button" onClick={() => { setText(initialText); setSnapshot(null); touch(); }}>Restaurar modelo</button>
-                <button type="button" onClick={() => setShowDiff((s) => !s)} aria-pressed={showDiff}>Comparar com o texto inicial</button>
-                <button type="button" onClick={() => manualClear('all')}>Limpar</button>
               </div>
+              <details className="more">
+                <summary>Mais ações</summary>
+                <div className="row">
+                  <button type="button" onClick={() => { setText(initialText); setSnapshot(null); touch(); }}>Restaurar modelo</button>
+                  <button type="button" onClick={() => setShowDiff((s) => !s)} aria-pressed={showDiff}>Comparar com o texto inicial</button>
+                  <button type="button" onClick={() => manualClear('all')}>Limpar formulário e prévia</button>
+                </div>
+              </details>
               {copied === 'ok' && (
                 <div role="status" className="panel ok">
                   <p>Texto copiado. Deseja limpar o conteúdo agora?</p>
