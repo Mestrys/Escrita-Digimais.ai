@@ -82,6 +82,10 @@ Requer Edge 116 ou superior (API `chrome.sidePanel.open`).
 4. “Gerar prévia”. Se faltar algo essencial, a extensão lista perguntas objetivas e destaca os campos.
 5. Revise e edite a prévia. “Revisar novamente” reavalia o texto editado. “Comparar com o texto inicial” mostra as diferenças.
 6. “Copiar texto”. Em seguida, a extensão oferece limpar o conteúdo.
+7. Limpou sem querer? “Desfazer limpeza” fica disponível por 30 segundos e restaura o conteúdo. Depois disso, ele é descartado da memória. A limpeza por inatividade nunca é desfeita.
+
+### Revisar um texto pronto
+O botão “Revisar texto pronto” abre um modo só de revisão: cole um texto que você já escreveu, escolha o tipo e o destinatário e receba alertas, sugestões e indicadores pelas mesmas regras locais. O texto nunca é alterado, enviado ou salvo. O contexto opcional (evidência registrada, confirmação do usuário, prazo já definido) evita alertas indevidos, porque o revisor não vê o chamado.
 
 ## Permissões e justificativas
 | Permissão | Justificativa |
