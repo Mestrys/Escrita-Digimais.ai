@@ -2,15 +2,25 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { emptyContent, initialForm, TEXT_FORM_FIELDS, toGenerationInput } from '../application/form';
 import type { FormState, TextFormField } from '../application/form';
 import { DEFAULT_PREFERENCES } from '../application/preferences';
+import {
+  effectiveUsageMode, exportCounters, generationKeys, timeBucket, UsageRecorder,
+} from '../application/usage-counters';
+import type { UsagePolicy } from '../application/usage-counters';
 import type { Preferences } from '../application/preferences';
+import { hasReviewContent, initialReviewForm, reviewInputProblem, toReviewContext } from '../application/review-form';
+import type { ReviewFormState } from '../application/review-form';
 import { createProvider, DISABLED_AI_POLICY, generateWithFallback } from '../application/provider';
 import type { AiPolicy, TextGenerationProvider } from '../application/provider';
 import {
   FIELD_META, fieldHint, fieldLabel, FORMALITY_LABELS, LENGTH_LABELS, RECIPIENT_LABELS, TECH_LEVEL_LABELS, TYPE_FIELDS,
 } from '../config/fields';
 import { DEFAULT_PROFILE } from '../config/language-profile';
-import { exportProfileJson, parseProfileJson } from '../config/profile-schema';
+import { exportProfileJson } from '../config/profile-schema';
+import { importProfileText } from '../application/profile-signing';
+import { applyOverlay, parseOverlayJson } from '../config/profile-overlay';
+import type { ProfileOverlay } from '../config/profile-overlay';
 import { reviewText } from '../domain/review';
+import type { ReviewResult } from '../domain/review';
 import { scanText } from '../domain/sensitive';
 import { SUFFICIENCY_MATRIX } from '../domain/sufficiency';
 import { COMMUNICATION_TYPES, FORMALITIES, LENGTHS, RECIPIENTS, TECH_LEVELS } from '../domain/types';
@@ -19,17 +29,20 @@ import type {
 } from '../domain/types';
 import { copyText } from '../infrastructure/clipboard';
 import { AppStorage } from '../infrastructure/storage';
-import { loadAiPolicy } from '../infrastructure/policy';
+import { loadAiPolicy, loadSigningKeys, loadUsagePolicy } from '../infrastructure/policy';
 import { DiffView } from './components/DiffView';
 import { FieldControl } from './components/FieldControl';
 import type { Requirement } from './components/FieldControl';
 import { QualityPanel, WarningsList } from './components/ReviewPanel';
+import { ReviewMode } from './components/ReviewMode';
 import { SensitivePanel } from './components/SensitivePanel';
 import { SettingsPanel } from './components/SettingsPanel';
 
 export interface AppProps {
   storage?: AppStorage;
   loadPolicy?: () => Promise<AiPolicy>;
+  loadKeys?: () => Promise<string[]>;
+  loadUsage?: () => Promise<UsagePolicy>;
   copy?: (text: string) => Promise<boolean>;
   providerFactory?: (policy: AiPolicy) => TextGenerationProvider;
   now?: () => Date;
@@ -54,13 +67,34 @@ const BLOCK_TITLES: Record<NonNullable<GenerationResult['blockReason']>, string>
   input_too_long: 'Geração bloqueada: conteúdo grande demais.',
 };
 
-export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, providerFactory = createProvider, now }: AppProps) {
+function missingFieldLabel(field: ContextField | undefined, type: CommunicationType): string {
+  return field ? `Ir para o campo ${fieldLabel(field, type)}` : 'Ir para o campo';
+}
+
+/** Tempo em que "Desfazer" fica disponível após uma limpeza manual. O conteúdo só vive em memória. */
+export const UNDO_CLEAR_MS = 30_000;
+
+interface SavedContent {
+  form: FormState;
+  result: GenerationResult | null;
+  text: string;
+  initialText: string;
+  review: ReviewFormState;
+  reviewResult: ReviewResult | null;
+}
+
+export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigningKeys, loadUsage = loadUsagePolicy, copy = copyText, providerFactory = createProvider, now }: AppProps) {
   const store = useMemo(() => storage ?? new AppStorage(), [storage]);
   const [form, setForm] = useState<FormState>(initialForm);
-  const [profile, setProfile] = useState<LanguageProfile>(DEFAULT_PROFILE);
+  const [baseProfile, setProfile] = useState<LanguageProfile>(DEFAULT_PROFILE);
+  const [overlay, setOverlay] = useState<ProfileOverlay | null>(null);
+  const profile = useMemo(() => applyOverlay(baseProfile, overlay), [baseProfile, overlay]);
   const [profileSource, setProfileSource] = useState<'managed' | 'imported' | 'default'>('default');
   const [prefs, setPrefs] = useState<Preferences>(DEFAULT_PREFERENCES);
   const [policy, setPolicy] = useState<AiPolicy>(DISABLED_AI_POLICY);
+  const [signingKeys, setSigningKeys] = useState<string[]>([]);
+  const [usagePolicy, setUsagePolicy] = useState<UsagePolicy>('optional');
+  const [usageTotal, setUsageTotal] = useState(0);
   const [result, setResult] = useState<GenerationResult | null>(null);
   const [text, setText] = useState('');
   const [initialText, setInitialText] = useState('');
@@ -70,30 +104,83 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
   const [copied, setCopied] = useState<'none' | 'ok' | 'fail'>('none');
   const [confirmClear, setConfirmClear] = useState(false);
   const [alsoClearStored, setAlsoClearStored] = useState(false);
-  const [live, setLive] = useState('');
+  // Cada anúncio vira um nó novo na região ao vivo, para que leitores de tela repitam mensagens idênticas.
+  const [liveState, setLiveState] = useState({ text: '', n: 0 });
+  const setLive = useCallback((text: string) => setLiveState((s) => ({ text, n: s.n + 1 })), []);
   const [busy, setBusy] = useState(false);
   const [undo, setUndo] = useState<{ field: TextFormField; previous: string; label: string } | null>(null);
   const [activity, setActivity] = useState(0);
+  const [mode, setMode] = useState<'generate' | 'review'>('generate');
+  const [reviewForm, setReviewForm] = useState<ReviewFormState>(initialReviewForm);
+  const [reviewResult, setReviewResult] = useState<ReviewResult | null>(null);
+  const [reviewProblem, setReviewProblem] = useState<string | null>(null);
+  const [restorable, setRestorable] = useState<SavedContent | null>(null);
   const touched = useRef(new Set<string>());
   const previewRef = useRef<HTMLTextAreaElement>(null);
+  const confirmRef = useRef<HTMLElement>(null);
+  const clearButtonRef = useRef<HTMLButtonElement>(null);
+  const generatedAt = useRef(0);
+  const recorder = useMemo(
+    () => new UsageRecorder({ load: () => store.loadCounters(), save: (c) => store.saveCounters(c) }),
+    [store],
+  );
+  const usage = effectiveUsageMode(usagePolicy, prefs.usageCounters);
+  useEffect(() => recorder.setEnabled(usage.enabled), [recorder, usage.enabled]);
 
   useEffect(() => {
     let alive = true;
     void (async () => {
-      const [p, loaded, pol] = await Promise.all([store.loadPreferences(), store.loadProfile(), loadPolicy()]);
+      const keys = await loadKeys();
+      const [p, loaded, pol, ov, usagePol] = await Promise.all([
+        store.loadPreferences(), store.loadProfile(keys), loadPolicy(), store.loadOverlay(), loadUsage(),
+      ]);
       if (!alive) return;
       setPrefs(p);
       setProfile(loaded.profile);
       setProfileSource(loaded.source);
       setPolicy(pol);
+      setSigningKeys(keys);
+      setOverlay(ov);
+      setUsagePolicy(usagePol);
       setForm((f) => ({ ...f, techLevel: p.techLevel, formality: p.formality, length: p.length }));
     })();
     return () => {
       alive = false;
     };
-  }, [store, loadPolicy]);
+  }, [store, loadPolicy, loadKeys, loadUsage]);
 
-  const touch = useCallback(() => setActivity((n) => n + 1), []);
+  // Ao abrir a confirmação, o foco vai para ela; ao fechar, volta ao botão que a abriu.
+  useEffect(() => {
+    if (!confirmClear) return;
+    confirmRef.current?.focus();
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key !== 'Escape') return;
+      setConfirmClear(false);
+      setAlsoClearStored(false);
+      clearButtonRef.current?.focus();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [confirmClear]);
+
+  const closeConfirm = (): void => {
+    setConfirmClear(false);
+    setAlsoClearStored(false);
+    clearButtonRef.current?.focus();
+  };
+
+
+  // Qualquer nova ação do analista descarta a possibilidade de desfazer a limpeza.
+  const touch = useCallback(() => {
+    setActivity((n) => n + 1);
+    setRestorable(null);
+  }, []);
+
+  const clearReview = useCallback(() => {
+    setReviewForm((r) => ({ ...initialReviewForm(), type: r.type, recipient: r.recipient }));
+    setReviewResult(null);
+    setReviewProblem(null);
+  }, []);
 
   const clearContent = useCallback(() => {
     setForm((f) => ({ ...f, ...emptyContent(), variant: 0 }));
@@ -104,17 +191,64 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
     setShowDiff(false);
     setCopied('none');
     setUndo(null);
-  }, []);
+    clearReview();
+  }, [clearReview]);
 
   // Limpeza por inatividade (configurável). O estado vive só em memória.
   useEffect(() => {
     if (!prefs.autoClearMinutes) return;
     const id = window.setTimeout(() => {
       clearContent();
+      setRestorable(null);
       setLive('Conteúdo limpo por inatividade.');
     }, prefs.autoClearMinutes * 60_000);
     return () => window.clearTimeout(id);
-  }, [activity, prefs.autoClearMinutes, clearContent]);
+  }, [activity, prefs.autoClearMinutes, clearContent, setLive]);
+
+  // O conteúdo guardado para "Desfazer" expira sozinho.
+  useEffect(() => {
+    if (!restorable) return;
+    const id = window.setTimeout(() => setRestorable(null), UNDO_CLEAR_MS);
+    return () => window.clearTimeout(id);
+  }, [restorable]);
+
+  /** Limpeza pedida pelo analista: guarda o conteúdo em memória por pouco tempo para permitir desfazer. */
+  /**
+   * Limpeza pedida pelo analista. O escopo "review" limpa só o modo de revisão e preserva o formulário de geração.
+   * Em ambos os casos o conteúdo anterior fica em memória por 30 segundos para "Desfazer limpeza".
+   */
+  const manualClear = useCallback(
+    (scope: 'all' | 'review' = 'all') => {
+      const reviewHasContent = hasReviewContent(reviewForm) || Boolean(reviewResult);
+      const hasContent =
+        scope === 'review' ? reviewHasContent : reviewHasContent || Boolean(result) || TEXT_FORM_FIELDS.some((f) => form[f].trim());
+      if (!hasContent) {
+        if (scope === 'all') clearContent();
+        setLive('Não há conteúdo para limpar.');
+        return;
+      }
+      const saved: SavedContent = { form, result, text, initialText, review: reviewForm, reviewResult };
+      if (scope === 'review') clearReview();
+      else clearContent();
+      setRestorable(saved);
+      setLive('Conteúdo limpo. É possível desfazer por 30 segundos.');
+    },
+    [form, result, text, initialText, reviewForm, reviewResult, clearContent, clearReview, setLive],
+  );
+
+  const onRestore = (): void => {
+    if (!restorable) return;
+    setForm(restorable.form);
+    setResult(restorable.result);
+    setText(restorable.text);
+    setInitialText(restorable.initialText);
+    setReviewForm(restorable.review);
+    setReviewResult(restorable.reviewResult);
+    setSnapshot(null);
+    setRestorable(null);
+    setActivity((n) => n + 1);
+    setLive('Conteúdo restaurado.');
+  };
 
   const fields = TYPE_FIELDS[form.type];
   const visible = useMemo(() => new Set<string>([...fields.main, ...fields.advanced]), [fields]);
@@ -191,7 +325,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
     touch();
   };
 
-  const run = async (next: FormState): Promise<void> => {
+  const run = async (next: FormState, isVariant = false): Promise<void> => {
     setBusy(true);
     setCopied('none');
     const provider = providerFactory(policy);
@@ -203,6 +337,10 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
     setSnapshot(null);
     setShowDiff(false);
     setBusy(false);
+    generatedAt.current = Date.now();
+    void recorder.record(
+      isVariant ? ['variant'] : generationKeys(next.type, r.blocked ? r.blockReason : undefined, r.warnings.map((w) => w.code)),
+    );
     if (r.blocked) setLive('Geração bloqueada. O motivo está na seção de prévia e revisão.');
     else setLive(`Prévia gerada com ${r.warnings.length} alerta(s). Revise antes de copiar.`);
     touch();
@@ -212,12 +350,13 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
   const onVariant = (): void => {
     const next = { ...form, variant: form.variant + 1 };
     setForm(next);
-    void run(next);
+    void run(next, true);
   };
 
   const onReview = (): void => {
     if (!liveReview) return;
     const inputLevel = (result?.warnings ?? []).filter((w) => w.field && !liveReview.warnings.some((x) => x.code === w.code));
+    void recorder.record('review_again');
     setSnapshot({ warnings: [...liveReview.warnings, ...inputLevel], quality: liveReview.quality });
     setLive(`Revisão concluída: ${liveReview.warnings.length} alerta(s) no texto atual.`);
     touch();
@@ -226,6 +365,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
   const onCopy = async (): Promise<void> => {
     const ok = await copy(text);
     setCopied(ok ? 'ok' : 'fail');
+    if (ok) void recorder.record(['copy', `time_to_copy.${timeBucket(Date.now() - generatedAt.current)}`]);
     setLive(ok ? 'Texto copiado.' : 'Não foi possível copiar. Selecione o texto e copie manualmente.');
   };
 
@@ -245,17 +385,45 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
     setLive('Alteração desfeita.');
   };
 
+  const onReviewChange = (patch: Partial<ReviewFormState>): void => {
+    setReviewForm((r) => ({ ...r, ...patch }));
+    // Todo campo alimenta o contexto da revisão: qualquer mudança deixa o resultado exibido desatualizado.
+    setReviewResult(null);
+    setReviewProblem(null);
+    touch();
+  };
+
+  const onReviewRun = (): void => {
+    const problem = reviewInputProblem(reviewForm);
+    setReviewProblem(problem);
+    if (problem) {
+      setReviewResult(null);
+      setLive(problem);
+      return;
+    }
+    const r = reviewText(reviewForm.text, toReviewContext(reviewForm, profile), profile);
+    setReviewResult(r);
+    setLive(`Revisão concluída: ${r.warnings.length} alerta(s) no texto.`);
+    touch();
+  };
+
   const doClearAll = async (): Promise<void> => {
-    clearContent();
+    if (alsoClearStored) {
+      // Apagar os dados armazenados também descarta a cópia em memória: nada pode ser restaurado depois.
+      clearContent();
+      setRestorable(null);
+    } else manualClear('all');
     if (alsoClearStored) {
       await store.clearAll();
       setPrefs(DEFAULT_PREFERENCES);
       setProfile(DEFAULT_PROFILE);
       setProfileSource('default');
+      setOverlay(null);
     }
     setConfirmClear(false);
     setAlsoClearStored(false);
-    setLive(alsoClearStored ? 'Conteúdo e dados armazenados apagados.' : 'Conteúdo apagado.');
+    clearButtonRef.current?.focus();
+    if (alsoClearStored) setLive('Conteúdo e dados armazenados apagados.');
   };
 
   const onPrefs = (patch: Partial<Preferences>): void => {
@@ -264,16 +432,16 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
   };
 
   const onImport = async (json: string): Promise<string[]> => {
-    const parsed = parseProfileJson(json);
+    const parsed = await importProfileText(json, signingKeys);
     if (!parsed.ok) return parsed.errors;
-    await store.saveProfile(parsed.profile);
+    await store.saveProfile(parsed.profile, parsed.signature);
     setProfile(parsed.profile);
     setProfileSource('imported');
     return [];
   };
 
   const onExport = (): void => {
-    const blob = new Blob([exportProfileJson(profile)], { type: 'application/json' });
+    const blob = new Blob([exportProfileJson(baseProfile)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -282,9 +450,47 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
     URL.revokeObjectURL(url);
   };
 
+  const onImportOverlay = async (json: string): Promise<string[]> => {
+    const parsed = parseOverlayJson(json);
+    if (!parsed.ok) return parsed.errors;
+    await store.saveOverlay(parsed.overlay);
+    setOverlay(parsed.overlay);
+    return [];
+  };
+
+  const onRemoveOverlay = async (): Promise<void> => {
+    await store.removeOverlay();
+    setOverlay(null);
+    setLive('Camada da equipe removida.');
+  };
+
+  const refreshUsageTotal = useCallback(async (): Promise<void> => {
+    const snap = await recorder.snapshot();
+    setUsageTotal(Object.values(snap.counts).reduce((a, b) => a + b, 0));
+  }, [recorder]);
+
+  const onExportUsage = async (): Promise<void> => {
+    const blob = new Blob([exportCounters(await recorder.snapshot())], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'contadores-de-uso.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const onResetUsage = async (): Promise<void> => {
+    await recorder.snapshot();
+    await store.resetCounters();
+    setUsageTotal(0);
+    setLive('Contadores de uso zerados.');
+  };
+
   const onResetProfile = async (): Promise<void> => {
+    const keepOverlay = overlay;
     await store.clearAll();
-    const loaded = await store.loadProfile();
+    if (keepOverlay) await store.saveOverlay(keepOverlay);
+    const loaded = await store.loadProfile(signingKeys);
     setProfile(loaded.profile);
     setProfileSource(loaded.source);
     await store.savePreferences(prefs);
@@ -343,17 +549,17 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
       <header className="app-header">
         <h1>Assistente de Textos do Service Desk</h1>
         <div className="row">
-          <button type="button" onClick={() => setShowSettings((s) => !s)} aria-expanded={showSettings}>
+          <button type="button" onClick={() => { if (!showSettings) void refreshUsageTotal(); setShowSettings((s) => !s); }} aria-expanded={showSettings}>
             Configurações
           </button>
-          <button type="button" className="danger" onClick={() => setConfirmClear(true)}>
+          <button type="button" className="danger" ref={clearButtonRef} onClick={() => setConfirmClear(true)}>
             Limpar tudo
           </button>
         </div>
       </header>
 
       <div role="status" aria-live="polite" className="visually-hidden">
-        {live}
+        <span key={liveState.n}>{liveState.text}</span>
       </div>
 
       <main>
@@ -362,10 +568,37 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
           tokens ou dados pessoais desnecessários.
         </p>
 
+        <div className="segmented" role="group" aria-label="Modo de uso">
+          <button type="button" className={mode === 'generate' ? 'primary' : undefined} aria-pressed={mode === 'generate'} onClick={() => setMode('generate')}>
+            Gerar texto
+          </button>
+          <button type="button" className={mode === 'review' ? 'primary' : undefined} aria-pressed={mode === 'review'} onClick={() => setMode('review')}>
+            Revisar texto pronto
+          </button>
+        </div>
+
+        {restorable && (
+          <div role="status" className="panel info">
+            <p>Conteúdo limpo. Você pode desfazer por 30 segundos; depois ele é descartado da memória.</p>
+            <div className="row">
+              <button type="button" onClick={onRestore}>Desfazer limpeza</button>
+              <button type="button" onClick={() => setRestorable(null)}>Dispensar</button>
+            </div>
+          </div>
+        )}
+
         {confirmClear && (
-          <section className="panel warn" role="alertdialog" aria-labelledby="confirm-title" aria-modal="false">
+          <section
+            ref={confirmRef}
+            tabIndex={-1}
+            className="panel warn"
+            role="alertdialog"
+            aria-labelledby="confirm-title"
+            aria-describedby="confirm-desc"
+            aria-modal="false"
+          >
             <h2 id="confirm-title">Apagar todo o conteúdo?</h2>
-            <p>O formulário, a prévia e os resultados serão apagados deste painel.</p>
+            <p id="confirm-desc">O formulário, a prévia e os resultados serão apagados deste painel. Pressione Esc para cancelar.</p>
             <div className="row">
               <input
                 id="also-stored"
@@ -377,7 +610,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
             </div>
             <div className="row">
               <button type="button" className="danger" onClick={() => void doClearAll()}>Apagar agora</button>
-              <button type="button" onClick={() => setConfirmClear(false)}>Cancelar</button>
+              <button type="button" onClick={closeConfirm}>Cancelar</button>
             </div>
           </section>
         )}
@@ -391,10 +624,29 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
             onImport={onImport}
             onExport={onExport}
             onResetProfile={() => void onResetProfile()}
+            signingRequired={signingKeys.length > 0}
+            overlay={overlay}
+            onImportOverlay={onImportOverlay}
+            onRemoveOverlay={() => void onRemoveOverlay()}
+            usage={{ ...usage, policy: usagePolicy, total: usageTotal }}
+            onExportUsage={() => void onExportUsage()}
+            onResetUsage={() => void onResetUsage()}
           />
         )}
 
-        <form className="stack" autoComplete="off" onSubmit={(e) => { e.preventDefault(); onGenerate(); }}>
+        {mode === 'review' ? (
+          <ReviewMode
+            form={reviewForm}
+            onChange={onReviewChange}
+            profile={profile}
+            result={reviewResult}
+            problem={reviewProblem}
+            onReview={onReviewRun}
+            onClear={() => manualClear('review')}
+          />
+        ) : (
+        <>
+        <form className="stack" autoComplete="off" aria-label="Dados do texto a gerar" onSubmit={(e) => { e.preventDefault(); onGenerate(); }}>
           <h2>1. Tipo de comunicação</h2>
           <div className="field">
             <label htmlFor="type">Tipo de comunicação</label>
@@ -478,7 +730,13 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
                   {result.missingInformation.map((q, i) => (
                     <li key={q}>
                       {q}{' '}
-                      <button type="button" onClick={() => focusField(result.missingFields[i])}>Ir para o campo</button>
+                      <button
+                        type="button"
+                        onClick={() => focusField(result.missingFields[i])}
+                        aria-label={missingFieldLabel(result.missingFields[i], form.type)}
+                      >
+                        Ir para o campo
+                      </button>
                     </li>
                   ))}
                 </ul>
@@ -518,15 +776,20 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
                 <button type="button" className="primary" onClick={() => void onCopy()} disabled={copyBlocked}>Copiar texto</button>
                 <button type="button" onClick={onReview}>Revisar novamente</button>
                 <button type="button" onClick={onVariant} disabled={busy}>Outra variação</button>
-                <button type="button" onClick={() => { setText(initialText); setSnapshot(null); touch(); }}>Restaurar modelo</button>
-                <button type="button" onClick={() => setShowDiff((s) => !s)} aria-pressed={showDiff}>Comparar com o texto inicial</button>
-                <button type="button" onClick={clearContent}>Limpar</button>
               </div>
+              <details className="more">
+                <summary>Mais ações</summary>
+                <div className="row">
+                  <button type="button" onClick={() => { setText(initialText); setSnapshot(null); touch(); }}>Restaurar modelo</button>
+                  <button type="button" onClick={() => setShowDiff((s) => !s)} aria-pressed={showDiff}>Comparar com o texto inicial</button>
+                  <button type="button" onClick={() => manualClear('all')}>Limpar formulário e prévia</button>
+                </div>
+              </details>
               {copied === 'ok' && (
                 <div role="status" className="panel ok">
                   <p>Texto copiado. Deseja limpar o conteúdo agora?</p>
                   <div className="row">
-                    <button type="button" onClick={clearContent}>Limpar agora</button>
+                    <button type="button" onClick={() => manualClear('all')}>Limpar agora</button>
                     <button type="button" onClick={() => setCopied('none')}>Manter</button>
                   </div>
                 </div>
@@ -547,6 +810,8 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
             </>
           )}
         </section>
+        </>
+        )}
       </main>
     </div>
   );

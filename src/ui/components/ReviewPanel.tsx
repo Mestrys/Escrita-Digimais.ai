@@ -10,6 +10,19 @@ const DIMENSION_LABEL: Record<QualityDimension, string> = {
 };
 const ORDER: QualityDimension[] = ['clarity', 'objectivity', 'cordiality', 'completeness', 'safety'];
 
+/** Mostra o contexto em texto normal e destaca só o gatilho; sem gatilho conhecido, destaca o trecho inteiro. */
+function Excerpt({ excerpt, trigger }: { excerpt: string; trigger?: string }) {
+  const at = trigger ? excerpt.indexOf(trigger) : -1;
+  if (!trigger || at < 0) return <mark>{excerpt}</mark>;
+  return (
+    <>
+      {excerpt.slice(0, at)}
+      <mark>{trigger}</mark>
+      {excerpt.slice(at + trigger.length)}
+    </>
+  );
+}
+
 export function WarningsList({ warnings }: { warnings: Warning[] }) {
   if (warnings.length === 0) {
     return <p className="panel ok">Nenhum alerta pelas regras locais. Revise o texto mesmo assim.</p>;
@@ -22,7 +35,7 @@ export function WarningsList({ warnings }: { warnings: Warning[] }) {
           {w.message}
           {w.excerpt && (
             <p className="subtle">
-              Trecho: <mark>{w.excerpt}</mark>
+              Trecho: <Excerpt excerpt={w.excerpt} trigger={w.trigger} />
             </p>
           )}
           {w.suggestion && <p className="subtle">Sugestão: {w.suggestion}</p>}

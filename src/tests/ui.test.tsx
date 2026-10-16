@@ -60,10 +60,10 @@ describe('fluxo principal', () => {
     await user.click(screen.getByRole('button', { name: 'Gerar prévia' }));
     const alert = await screen.findByText('Faltam informações essenciais. Nada foi inventado.');
     expect(alert).toBeInTheDocument();
-    const field = screen.getByLabelText(/Perguntas ao destinatário/);
+    const field = screen.getByLabelText(/^Perguntas ao destinatário/);
     expect(field).toHaveAttribute('aria-invalid', 'true');
     expect(field).toHaveAccessibleDescription(/Quais perguntas objetivas/);
-    await user.click(screen.getByRole('button', { name: 'Ir para o campo' }));
+    await user.click(screen.getAllByRole('button', { name: /^Ir para o campo/ })[0]!);
     expect(field).toHaveFocus();
     expect(screen.queryByLabelText('Prévia editável')).toBeNull();
   });

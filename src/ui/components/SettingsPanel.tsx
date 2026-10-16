@@ -2,6 +2,8 @@ import { useState } from 'react';
 import type { ChangeEvent } from 'react';
 import { AUTO_CLEAR_OPTIONS } from '../../application/preferences';
 import type { Preferences } from '../../application/preferences';
+import type { ProfileOverlay } from '../../config/profile-overlay';
+import type { UsagePolicy } from '../../application/usage-counters';
 import { FORMALITY_LABELS, LENGTH_LABELS, TECH_LEVEL_LABELS } from '../../config/fields';
 import { FORMALITIES, LENGTHS, TECH_LEVELS } from '../../domain/types';
 import type { LanguageProfile } from '../../domain/types';
@@ -14,13 +16,41 @@ interface Props {
   onImport: (text: string) => Promise<string[]>;
   onExport: () => void;
   onResetProfile: () => void;
+  signingRequired: boolean;
+  overlay: ProfileOverlay | null;
+  onImportOverlay: (text: string) => Promise<string[]>;
+  onRemoveOverlay: () => void;
+  usage: { enabled: boolean; locked: boolean; policy: UsagePolicy; total: number };
+  onExportUsage: () => void;
+  onResetUsage: () => void;
+}
+
+function overlayRules(o: ProfileOverlay): string[] {
+  const plural = (n: number, one: string, many: string): string => `${n} ${n === 1 ? one : many}`;
+  const lines: string[] = [];
+  if (o.forbiddenTerms) lines.push(`${plural(o.forbiddenTerms.length, 'termo proibido', 'termos proibidos')}`);
+  if (o.preferredTerms) lines.push(`${plural(o.preferredTerms.length, 'termo preferido', 'termos preferidos')}`);
+  if (o.requiredTexts) lines.push(`${plural(o.requiredTexts.length, 'texto obrigatório', 'textos obrigatórios')}`);
+  if (o.internalDomains) lines.push(`${plural(o.internalDomains.length, 'domínio interno', 'domínios internos')}`);
+  if (o.maxLength !== undefined) lines.push(`Tamanho máximo de até ${o.maxLength} caracteres (vale o menor)`);
+  const c = o.closureRules;
+  if (c?.noResponseEnabled === false) lines.push('Encerramento por ausência de retorno desligado');
+  if (c?.minAttempts !== undefined) lines.push(`Pelo menos ${c.minAttempts} tentativas antes de encerrar por ausência de retorno`);
+  if (c?.requirePriorNotice === true) lines.push('Aviso prévio obrigatório antes de encerrar por ausência de retorno');
+  if (c?.minDaysAfterNotice !== undefined) lines.push(`Pelo menos ${c.minDaysAfterNotice} dias após o aviso prévio`);
+  return lines.length > 0 ? lines : ['Nenhuma regra além do nome da equipe'];
 }
 
 const SOURCE_LABEL = { managed: 'política da organização', imported: 'arquivo importado', default: 'padrão da extensão' } as const;
 
-export function SettingsPanel({ prefs, onPrefs, profile, profileSource, onImport, onExport, onResetProfile }: Props) {
+export function SettingsPanel({
+  prefs, onPrefs, profile, profileSource, onImport, onExport, onResetProfile, signingRequired, overlay, onImportOverlay, onRemoveOverlay,
+  usage, onExportUsage, onResetUsage,
+}: Props) {
   const [errors, setErrors] = useState<string[]>([]);
   const [done, setDone] = useState(false);
+  const [overlayErrors, setOverlayErrors] = useState<string[]>([]);
+  const [overlayDone, setOverlayDone] = useState(false);
 
   const onFile = async (e: ChangeEvent<HTMLInputElement>): Promise<void> => {
     const file = e.target.files?.[0];
@@ -33,11 +63,25 @@ export function SettingsPanel({ prefs, onPrefs, profile, profileSource, onImport
     setDone(errs.length === 0);
   };
 
+  const onOverlayFile = async (e: ChangeEvent<HTMLInputElement>): Promise<void> => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setOverlayDone(false);
+    const errs = await onImportOverlay(await file.text());
+    setOverlayErrors(errs);
+    setOverlayDone(errs.length === 0);
+  };
+
   return (
     <section aria-labelledby="settings-title" className="stack">
       <h2 id="settings-title">Configurações</h2>
       <fieldset className="stack">
-        <legend className="legend">Preferências (únicos dados salvos neste navegador)</legend>
+        <legend className="legend">Preferências de uso</legend>
+        <p className="subtle">
+          Este navegador guarda apenas preferências, o perfil importado (com a assinatura, se exigida), a camada da equipe
+          e os contadores de uso, se ligados. Conteúdo de chamado nunca é guardado.
+        </p>
         <div className="field">
           <label htmlFor="pref-tech">Nível técnico padrão</label>
           <select id="pref-tech" value={prefs.techLevel} onChange={(e) => onPrefs({ techLevel: e.target.value as Preferences['techLevel'] })}>
@@ -67,6 +111,35 @@ export function SettingsPanel({ prefs, onPrefs, profile, profileSource, onImport
       </fieldset>
 
       <fieldset className="stack">
+        <legend className="legend">Contadores de uso (opcional)</legend>
+        <p className="subtle">
+          Guardam apenas números por categoria, como quantos textos de cada tipo foram gerados, quantos foram bloqueados
+          e em que faixa de tempo o texto foi copiado. Nunca guardam o que você digita, datas de cada uso ou dados de
+          chamados. Ficam somente neste navegador e só saem se você exportar o arquivo.
+        </p>
+        {usage.locked ? (
+          <p role="status">
+            Contadores {usage.enabled ? 'ligados' : 'desligados'} pela política da organização. Não é possível alterar aqui.
+          </p>
+        ) : (
+          <div className="row">
+            <input
+              id="pref-usage"
+              type="checkbox"
+              checked={prefs.usageCounters}
+              onChange={(e) => onPrefs({ usageCounters: e.target.checked })}
+            />
+            <label htmlFor="pref-usage">Registrar contadores de uso neste navegador</label>
+          </div>
+        )}
+        <p className="subtle">Total registrado: {usage.total}</p>
+        <div className="row">
+          <button type="button" onClick={onExportUsage}>Exportar contadores</button>
+          <button type="button" onClick={onResetUsage}>Zerar contadores</button>
+        </div>
+      </fieldset>
+
+      <fieldset className="stack">
         <legend className="legend">Perfil de linguagem</legend>
         <p>
           Versão <strong>{profile.profileVersion}</strong>
@@ -75,6 +148,7 @@ export function SettingsPanel({ prefs, onPrefs, profile, profileSource, onImport
         <p className="subtle">
           A importação valida o esquema e recusa HTML, links e chaves desconhecidas. Nada é enviado: o arquivo é lido
           apenas neste navegador.
+          {signingRequired && ' A organização exige perfil assinado: arquivos sem assinatura válida são recusados.'}
         </p>
         <div className="row">
           {profileSource !== 'managed' && (
@@ -95,6 +169,41 @@ export function SettingsPanel({ prefs, onPrefs, profile, profileSource, onImport
           </div>
         )}
         {done && <p role="status" className="panel ok">Perfil importado e validado.</p>}
+      </fieldset>
+
+      <fieldset className="stack">
+        <legend className="legend">Camada da equipe (opcional)</legend>
+        <p className="subtle">
+          Acrescenta regras da sua equipe sobre o perfil acima, somente para restringir: termos proibidos e preferidos,
+          textos obrigatórios, domínios internos, tamanho máximo menor e regras de encerramento mais rígidas. Não altera
+          saudações, assinatura nem modelos, e nunca afrouxa o perfil da organização.
+        </p>
+        {overlay ? (
+          <>
+            <p>
+              Camada ativa: <strong>{overlay.overlayName}</strong>.
+            </p>
+            <ul className="subtle" aria-label="Regras acrescentadas pela camada">
+              {overlayRules(overlay).map((line) => <li key={line}>{line}</li>)}
+            </ul>
+          </>
+        ) : (
+          <p className="subtle">Nenhuma camada ativa.</p>
+        )}
+        <div className="row">
+          <div className="field">
+            <label htmlFor="overlay-file">Importar camada da equipe (JSON)</label>
+            <input id="overlay-file" type="file" accept="application/json,.json" onChange={(e) => void onOverlayFile(e)} />
+          </div>
+          {overlay && <button type="button" onClick={onRemoveOverlay}>Remover camada da equipe</button>}
+        </div>
+        {overlayErrors.length > 0 && (
+          <div role="alert" className="panel block">
+            <p className="error-text">Importação da camada recusada. Corrija os itens abaixo:</p>
+            <ul>{overlayErrors.map((er, i) => <li key={i}>{er}</li>)}</ul>
+          </div>
+        )}
+        {overlayDone && <p role="status" className="panel ok">Camada da equipe importada e validada.</p>}
       </fieldset>
     </section>
   );

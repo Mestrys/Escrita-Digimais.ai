@@ -1,4 +1,5 @@
 // Verificação do pacote final: sem código remoto, sem eval, sem chamadas de rede, permissões mínimas.
+// Uso: node scripts/verify-dist.mjs [diretório]  (padrão: dist)
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -7,8 +8,9 @@ const walk = (dir) => readdirSync(dir).flatMap((n) => {
   const p = join(dir, n);
   return statSync(p).isDirectory() ? walk(p) : [p];
 });
-const files = walk('dist');
-const manifest = JSON.parse(readFileSync('dist/manifest.json', 'utf8'));
+const dir = process.argv[2] ?? 'dist';
+const files = walk(dir);
+const manifest = JSON.parse(readFileSync(join(dir, 'manifest.json'), 'utf8'));
 
 const allowedPermissions = ['sidePanel', 'storage'];
 for (const p of manifest.permissions ?? []) if (!allowedPermissions.includes(p)) problems.push(`Permissão não prevista: ${p}`);
@@ -38,13 +40,14 @@ for (const f of files) {
       if (/<(?:script|link)[^>]+(?:src|href)=["']https?:/i.test(text)) problems.push(`${f}: recurso remoto`);
       if (/\son\w+=/i.test(text)) problems.push(`${f}: manipulador inline`);
     }
+    if (/\.css$/.test(f) && /url\(\s*['"]?data:/i.test(text)) problems.push(`${f}: data: URI em CSS (a CSP não permite)`);
     if (/\.(js|css)$/.test(f) && /(?:src|href|url)\(?\s*=?\s*["']https?:\/\/(?!www\.w3\.org|react\.dev|reactjs\.org)/.test(text)) {
       problems.push(`${f}: possível recurso remoto`);
     }
   }
 }
 if (problems.length) {
-  console.error('Verificação do dist FALHOU:\n- ' + problems.join('\n- '));
+  console.error(`Verificação de ${dir} FALHOU:\n- ` + problems.join('\n- '));
   process.exit(1);
 }
-console.log(`Verificação do dist aprovada (${files.length} arquivos, permissões: ${(manifest.permissions ?? []).join(', ')}).`);
+console.log(`Verificação de ${dir} aprovada (${files.length} arquivos, permissões: ${(manifest.permissions ?? []).join(', ')}).`);

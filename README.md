@@ -25,6 +25,7 @@ Gera sugestões padronizadas para:
 - O motor é determinístico (templates e regras), não um modelo de linguagem. Ele não reescreve livremente nem infere fatos: se faltar informação essencial, pergunta ao analista.
 - A detecção de dados sensíveis e os indicadores de qualidade são heurísticos e podem errar. A revisão humana é obrigatória.
 - O texto livre guiado usa a frase principal exatamente como informada.
+- “Outra variação” alterna frases equivalentes de abertura, fechamento e cortesia, escolhidas por posição (sem sorteio): a mesma sequência de cliques gera sempre os mesmos textos, e os fatos informados não mudam. Há até 8 combinações em tipos como “Solicitar informações”. Tipos sem frases alternativas, como a nota técnica, repetem o texto. A organização amplia as opções no perfil de linguagem.
 
 ## Arquitetura
 ```
@@ -54,26 +55,52 @@ Pipeline: normalização, dados sensíveis (bloqueio ou mascaramento), suficiên
 Requisitos: Node.js 20 ou superior.
 ```
 npm ci
-npm run check      # lint, typecheck, testes, build e verificação do pacote
+npm run check      # lint, typecheck, testes, builds e verificação dos pacotes
 npm test           # somente testes
+npm run dev        # build de desenvolvimento em dist-dev/, refeito a cada alteração
+npm run build:dev  # build de desenvolvimento único, com verificação do pacote
 npm run build      # gera dist/
 npm run verify:dist
-npm run package    # gera release/assistente-textos-service-desk-<versão>.zip
+npm run package    # gera release/escrita-digimais.ai_v<versão>.zip
 npm run icons      # regenera os ícones PNG (sem dependências externas)
 npm run audit:deps # npm audit das dependências de produção
 ```
 
 ## Integração contínua
-O workflow `.github/workflows/ci.yml` roda a cada pull request e a cada push no `main`: `npm ci`, `npm run check` (lint, typecheck, testes, build e verificação do pacote), `npm audit` das dependências de produção e o empacotamento. O `.zip` da extensão fica disponível como artefato da execução por 14 dias. As actions são fixadas por SHA de commit, e o token tem apenas permissão de leitura.
+O workflow `.github/workflows/ci.yml` roda a cada pull request e a cada push no `main`: `npm ci`, `npm run check` (lint, typecheck, testes, builds de produção e de desenvolvimento e verificação dos pacotes), `npm audit` das dependências de produção e o empacotamento. O `.zip` da extensão fica disponível como artefato da execução por 14 dias. As actions são fixadas por SHA de commit, e o token tem apenas permissão de leitura.
 
 ## Carregar no Microsoft Edge
-1. Rode `npm run build`.
-2. Abra `edge://extensions`.
-3. Ative “Modo de desenvolvedor”.
-4. Clique em “Carregar sem compactação” e selecione a pasta `dist/`.
-5. Clique no ícone da extensão e em “Abrir painel lateral”.
+Resumo (o passo a passo completo, com depuração, política de teste e solução de problemas, está em [`docs/DESENVOLVIMENTO-EDGE.md`](docs/DESENVOLVIMENTO-EDGE.md)):
+1. Rode `npm run dev` (desenvolvimento, gera `dist-dev/` e refaz o build a cada alteração) ou `npm run build` (produção, gera `dist/`).
+2. Abra `edge://extensions` e ative “Modo de desenvolvedor”.
+3. Clique em “Carregar sem compactação” e selecione `dist-dev/` ou `dist/` (nunca a raiz do repositório).
+4. Clique no ícone da extensão e em “Abrir painel lateral”.
 
-Requer Edge 116 ou superior (API `chrome.sidePanel.open`).
+Sem Node, use o `.zip` do artefato do CI. Requer Edge 116 ou superior (API `chrome.sidePanel.open`).
+
+## Qualidade da detecção
+A detecção de dados sensíveis é medida contra um corpus sintético de 112 casos e protegida no CI por pisos de qualidade, com tolerância zero para segredos bloqueantes que escapem. Resultados, falhas conhecidas e limites em [docs/AVALIACAO.md](docs/AVALIACAO.md).
+
+## Acessibilidade
+A interface é testada com axe-core (WCAG 2.2 AA), verificação de marcos, títulos, nomes, foco e anúncios, e contraste nos dois temas. O teste com leitor de tela (NVDA e Narrador) exige uma pessoa e ainda não foi executado: o roteiro e a tabela de resultados estão em [docs/ACESSIBILIDADE.md](docs/ACESSIBILIDADE.md).
+
+## Design visual
+
+A interface segue o Material Design 3: papéis de cor tonais (tema claro e escuro conforme o sistema), formas, escala tipográfica e estados de interação (hover, foco, pressão). A fonte é a Google Sans Flex (variável, com tamanho óptico), embutida no pacote sob licença SIL OFL 1.1; não há CDN nem Google Fonts em tempo de execução. Sem a fonte, o navegador usa Google Sans, Roboto ou a fonte do sistema.
+
+- Tokens em `src/ui/styles/tokens.css`; estilos em `app.css`; `@font-face` em `fonts.css`.
+- Respeita `prefers-color-scheme`, `prefers-reduced-motion`, `prefers-contrast` e cores forçadas do Windows. O foco por teclado é sempre visível.
+- `src/tests/contrast.test.ts` confere o contraste WCAG AA de todos os pares de cor usados, nos dois temas.
+- Avisos de terceiros em `THIRD-PARTY-NOTICES.md`; a licença da fonte também vai dentro do pacote (`licenses/`).
+
+## Entrega e demonstração
+- Estado do projeto, limitações e pendências com dono: [docs/ENTREGA.md](docs/ENTREGA.md).
+- Roteiro de demonstração de 7 minutos, ensaiado em navegador real: [docs/DEMONSTRACAO.md](docs/DEMONSTRACAO.md) (`node scripts/demo-capture.mjs <pasta-da-extensao> demo` gera as imagens de reserva).
+
+## Validação, piloto e governança
+- Roteiro de instalação, formato e piloto: [docs/VALIDACAO-PILOTO.md](docs/VALIDACAO-PILOTO.md); amostras: [docs/AMOSTRAS-FORMATO.md](docs/AMOSTRAS-FORMATO.md); modelo de feedback: [docs/FEEDBACK-PILOTO.md](docs/FEEDBACK-PILOTO.md).
+- Análise dos contadores exportados: `node scripts/analyze-usage.mjs arquivo1.json arquivo2.json`.
+- Proteção da `main` e demais ajustes de administração: [docs/GOVERNANCA.md](docs/GOVERNANCA.md).
 
 ## Uso
 1. Escolha o tipo de comunicação e o destinatário (o destinatário aplica nível técnico e formalidade sugeridos, até você alterar manualmente).
@@ -82,6 +109,10 @@ Requer Edge 116 ou superior (API `chrome.sidePanel.open`).
 4. “Gerar prévia”. Se faltar algo essencial, a extensão lista perguntas objetivas e destaca os campos.
 5. Revise e edite a prévia. “Revisar novamente” reavalia o texto editado. “Comparar com o texto inicial” mostra as diferenças.
 6. “Copiar texto”. Em seguida, a extensão oferece limpar o conteúdo.
+7. Limpou sem querer? “Desfazer limpeza” fica disponível por 30 segundos e restaura o conteúdo. Depois disso, ele é descartado da memória. A limpeza por inatividade nunca é desfeita, e “Limpar tudo” com a opção de apagar os dados salvos também descarta a possibilidade de desfazer. Os botões de limpar têm um escopo cada: “Limpar tudo” (cabeçalho, com confirmação), “Limpar formulário e prévia” (em “Mais ações”, com desfazer) e, no modo “Revisar texto pronto”, “Limpar revisão”, que apaga só a revisão e preserva o formulário de geração.
+
+### Revisar um texto pronto
+O botão “Revisar texto pronto” abre um modo só de revisão: cole um texto que você já escreveu, escolha o tipo e o destinatário e receba alertas, sugestões e indicadores pelas mesmas regras locais. O texto nunca é alterado, enviado ou salvo. O contexto opcional (evidência registrada, confirmação do usuário, prazo já definido) evita alertas indevidos, porque o revisor não vê o chamado.
 
 ## Permissões e justificativas
 | Permissão | Justificativa |
@@ -103,7 +134,14 @@ Desativado por padrão (opção mais segura). Para habilitar: `closureRules.noRe
 Em “Configurações > Perfil de linguagem”. A importação é local e recusa: JSON inválido, arquivo acima de 100 KB, chaves desconhecidas (inclusive `__proto__`), HTML, links, esquemas executáveis, caracteres de controle, placeholders não permitidos e valores fora de faixa. Termos são comparados como texto, nunca como expressão regular. A exportação gera o JSON do perfil efetivo.
 
 ### Política gerenciada (implantação empresarial)
-O esquema está em `public/managed-schema.json`. Exemplo de valor para a chave `languageProfile` (string JSON) via política do Edge (GPO/Intune, `3rdparty > extensions > <id> > policy`). A chave `aiProvider` está reservada e não ativa nenhuma chamada nesta versão.
+O esquema está em `public/managed-schema.json`. Exemplo de valor para a chave `languageProfile` (string JSON) via política do Edge (GPO/Intune, `3rdparty > extensions > <id> > policy`). A chave `profileSigningPublicKeys` (até duas chaves públicas ECDSA P-256, SPKI em base64) faz a extensão exigir perfil assinado: importação sem assinatura válida é recusada e o perfil guardado é reverificado a cada abertura. A chave `usageCounters` (`off`, `optional` ou `on`; padrão `optional`) controla os contadores de uso agregados, sem conteúdo e só locais (ver PRIVACY.md). A chave `aiProvider` está reservada e não ativa nenhuma chamada nesta versão.
+
+### Assinatura de perfil (opcional)
+```
+node scripts/sign-profile.mjs keygen chave-da-org              # cria chave-da-org.private.pem e imprime a chave pública
+node scripts/sign-profile.mjs sign perfil.json chave-da-org.private.pem
+```
+Publique a chave pública em `profileSigningPublicKeys` pela política e distribua o `perfil.assinado.json`. O perfil precisa estar na forma normalizada: parta de um perfil exportado pela extensão. Guarde a chave privada em cofre e fora do repositório (`*.pem` já é ignorado). Para rotacionar, publique a chave nova junto da antiga, reassine e depois remova a antiga.
 
 ## Empacotamento
 `npm run package` executa build, verificação do pacote e gera um `.zip` de `dist/` em `release/`. A verificação (`scripts/verify-dist.mjs`) falha se encontrar permissões extras, CSP insegura, scripts inline, recursos remotos, `eval`, `new Function`, `fetch`, XHR, WebSocket ou `sendBeacon`.
@@ -124,8 +162,16 @@ O esquema está em `public/managed-schema.json`. Exemplo de valor para a chave `
 ## Licença
 Domínio público (Unlicense). Veja `LICENSE`.
 
+### Camada da equipe (opcional)
+Além do perfil da organização, cada analista pode importar uma camada da equipe em Configurações. A mesclagem é restritiva: a camada só endurece regras, nunca afrouxa. Formato:
+```json
+{ "schemaVersion": 1, "overlayName": "Equipe Redes", "forbiddenTerms": ["gambiarra"], "maxLength": 1500, "closureRules": { "minAttempts": 4 } }
+```
+Campos aceitos: `forbiddenTerms`, `preferredTerms`, `requiredTexts`, `internalDomains` (somados à base), `maxLength` (vale o menor) e, em `closureRules`, `noResponseEnabled` (só desliga), `minAttempts` e `minDaysAfterNotice` (vale o maior) e `requirePriorNotice` (só liga). Saudações, fechamentos, assinatura, modelos, siglas conhecidas e aviso de privacidade são recusados. Como não pode afrouxar nada, a camada não exige assinatura, mesmo quando a organização exige perfil assinado.
+
 ## Decisões registradas
 - Encerramento por ausência de retorno desativado por padrão.
 - Dados pessoais e de infraestrutura são mascarados na prévia (com aviso), mantendo o campo original intacto.
 - Credenciais e pedidos de credenciais bloqueiam geração e cópia.
 - Conteúdo nunca é persistido; limpeza por inatividade padrão de 15 minutos.
+- Contadores de uso são opt-in (ou definidos por política), apenas numéricos, em lista fechada de chaves, locais e exportáveis manualmente.

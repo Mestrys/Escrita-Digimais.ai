@@ -6,6 +6,19 @@
       "description": "Perfil de linguagem da organização, em JSON validado pela extensão. Tem precedência sobre perfis importados.",
       "type": "string"
     },
+    "profileSigningPublicKeys": {
+      "title": "Chaves públicas de assinatura de perfil",
+      "description": "Até duas chaves públicas ECDSA P-256 (SPKI em base64) para rotação. Quando definidas, a extensão só importa perfis assinados com uma delas e reverifica a assinatura a cada abertura. Gere o par com scripts/sign-profile.mjs e guarde a chave privada fora do repositório.",
+      "type": "array",
+      "maxItems": 2,
+      "items": { "type": "string", "minLength": 80, "maxLength": 200, "pattern": "^[A-Za-z0-9+/]+={0,2}$" }
+    },
+    "usageCounters": {
+      "title": "Contadores de uso agregados",
+      "description": "off: desligados e sem opção para o analista. optional (padrão): o analista decide, começando desligado. on: ligados pela organização. Os contadores guardam apenas números por categoria, nunca texto de chamado, e ficam só no navegador.",
+      "type": "string",
+      "enum": ["off", "optional", "on"]
+    },
     "aiProvider": {
       "title": "Provedor de IA (desativado por padrão)",
       "description": "Reservado para versão futura. Nesta versão nenhuma chamada remota é feita.",

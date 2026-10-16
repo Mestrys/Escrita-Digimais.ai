@@ -64,6 +64,48 @@ export const BLAME_RULES: LexicalRule[] = [
     suggestion: 'Retome a informação de forma neutra, sem referência a falhas anteriores.',
   },
   {
+    code: 'condescending_tone',
+    pattern: new RegExp(
+      [
+        'todo mundo sabe',
+        'como (?:todos|qualquer um|qualquer pessoa) sabe',
+        'qualquer (?:pessoa|um|usu[áa]rio) (?:sabe|consegue|entende)',
+        '(?<![\\p{L}\\p{N}])[ée] s[óo] (?:voc[êe] )?(?:clicar|fazer|seguir|abrir|digitar|apertar|ligar|reiniciar|instalar)',
+        '\\bsimplesmente (?:clique|fa[çc]a|siga|abra|digite|reinicie|instale)',
+        '(?<!n[ãa]o )\\bbasta (?:voc[êe] )?(?:clicar|fazer|seguir|abrir|digitar|reiniciar|instalar)',
+        '\\bat[ée] uma crian[çc]a',
+      ].join('|'),
+      i,
+    ),
+    severity: 'warning',
+    dimension: 'cordiality',
+    penalty: 12,
+    message: 'Trecho que pode soar condescendente, como se a tarefa fosse trivial.',
+    suggestion: 'Descreva o passo de forma neutra. Exemplo: "Para resolver, reinicie o computador e informe se o erro persiste."',
+  },
+  {
+    code: 'pressure_language',
+    pattern: new RegExp(
+      [
+        '\\bvoc[êe] (?:tem que|precisa obrigatoriamente)',
+        '(?<![\\p{L}\\p{N}])[ée] (?:sua|de sua) (?:obriga[çc][ãa]o|responsabilidade)',
+        '\\bexigimos\\b',
+        '\\bdeterminamos que\\b',
+        '\\bobrigatoriamente\\b',
+        '\\bn[ãa]o (?:aceitamos|toleramos|admitimos)',
+        '\\bsob (?:nenhuma )?hip[óo]tese',
+        '\\bsem (?:demora|desculpas)',
+        '\\ba qualquer custo',
+      ].join('|'),
+      i,
+    ),
+    severity: 'warning',
+    dimension: 'cordiality',
+    penalty: 15,
+    message: 'Linguagem de pressão ou de ordem, que tende a gerar resistência.',
+    suggestion: 'Explique o motivo e o que a pessoa precisa fazer, usando "por favor" e, se houver, o prazo informado no campo próprio.',
+  },
+  {
     code: 'hostile_language',
     pattern: new RegExp('rid[íi]culo|absurdo|idiota|burro|incompetente|in[úu]til|palha[çc]ada|desrespeito|inaceit[áa]vel', i),
     severity: 'warning',
@@ -125,6 +167,34 @@ export const PROMISE_RULES: LexicalRule[] = [
     penalty: 20,
     message: 'Promessa de resultado sem base no contexto informado.',
     suggestion: 'Prefira "seguimos com a análise" ou descreva apenas o próximo passo concreto.',
+  },
+  {
+    code: 'implicit_commitment',
+    pattern: new RegExp(
+      [
+        '\\bvamos (?:resolver|corrigir|solucionar|normalizar|consertar)\\b',
+        '\\bvai (?:voltar ao normal|funcionar|ficar (?:tudo )?(?:bem|normal|certo|resolvido))',
+        '\\b(?:n[ãa]o|nunca) (?:vai|ir[áa]) (?:mais )?(?:ocorrer|acontecer|se repetir|voltar a (?:ocorrer|acontecer))',
+        '\\b(?:n[ãa]o|nunca) (?:ocorrer[áa]|acontecer[áa]) (?:mais|novamente|de novo)',
+        '\\bnunca mais\\b',
+        'n[ãa]o se repetir[áa]',
+        '\\b(?:fique|pode ficar|podem ficar) tranquil[oa]s?\\b',
+        // Só garantias futuras ou enfáticas: o relato de algo que já aconteceu ("realizamos a manutenção sem impacto") não alerta.
+        '\\b(?:ser[áa]|ficar[áa]|vai ser|vai ficar)(?: \\p{L}+){0,2} sem (?:nenhum |qualquer )?(?:impacto|risco|custo adicional|perda de dados)',
+        '\\bsem (?:nenhum|qualquer) (?:impacto|risco|custo adicional|perda de dados)',
+        'n[ãa]o haver[áa] (?:novos? )?(?:problemas|impacto|indisponibilidade|falhas|perda)',
+        '\\bser[áa] priorizad\\w*',
+        'prioridade (?:m[áa]xima|total|absoluta)',
+        'tratad[oa]s? com prioridade',
+      ].join('|'),
+      i,
+    ),
+    severity: 'warning',
+    dimension: 'safety',
+    penalty: 15,
+    message: 'Compromisso ou garantia implícita que o contexto informado não sustenta.',
+    suggestion:
+      'Descreva apenas o que foi feito e o próximo passo concreto. Se houver compromisso real, registre-o no campo próprio, como o prazo informado.',
   },
 ];
 

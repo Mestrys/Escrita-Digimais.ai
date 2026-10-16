@@ -44,6 +44,9 @@ export interface ReviewContext {
   pendingItem?: string;
 }
 
+const IDENTIFIER_PATTERN =
+  /(?<![\p{L}\p{N}_])[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+(?![\p{L}\p{N}])|(?<![\p{L}\p{N}_])[A-Z][A-Z0-9]*(?=\s*=)/gu;
+
 function excerptOf(text: string, match: RegExpMatchArray | null, radius = 24): string | undefined {
   if (!match || match.index === undefined) return undefined;
   const start = Math.max(0, match.index - radius);
@@ -51,16 +54,33 @@ function excerptOf(text: string, match: RegExpMatchArray | null, radius = 24): s
   return (start > 0 ? '…' : '') + text.slice(start, end).replace(/\s+/g, ' ') + (end < text.length ? '…' : '');
 }
 
+/** Contexto ao redor do achado e o trecho exato que o acionou (o trecho é sempre uma parte do contexto). */
+function excerptFields(text: string, match: RegExpMatchArray | null): { excerpt?: string; trigger?: string } {
+  const excerpt = excerptOf(text, match);
+  if (!excerpt || !match) return {};
+  const trigger = match[0].replace(/\s+/g, ' ').trim();
+  return trigger && excerpt.includes(trigger) ? { excerpt, trigger } : { excerpt };
+}
+
 function applyLexical(text: string, rules: LexicalRule[], out: Warning[], skip?: (m: RegExpMatchArray) => boolean): void {
   for (const rule of rules) {
-    const m = rule.pattern.exec(text);
-    if (!m || skip?.(m)) continue;
+    // Considera todas as ocorrências e usa a primeira que não é isenta: uma palavra isenta (por exemplo, a do campo
+    // de prazo) não esconde outra ocorrência da mesma regra mais adiante no texto.
+    const all = rule.pattern.global ? rule.pattern : new RegExp(rule.pattern.source, `${rule.pattern.flags}g`);
+    let m: RegExpMatchArray | undefined;
+    for (const candidate of text.matchAll(all)) {
+      if (!skip?.(candidate)) {
+        m = candidate;
+        break;
+      }
+    }
+    if (!m) continue;
     out.push({
       code: rule.code,
       severity: rule.severity,
       message: rule.message,
       suggestion: rule.suggestion,
-      excerpt: excerptOf(text, m),
+      ...excerptFields(text, m),
       dimension: rule.dimension,
       penalty: rule.penalty,
     });
@@ -81,9 +101,12 @@ export function detectTextRisks(text: string, ctx: ReviewContext, profile: Langu
   const closureType = ctx.type === 'closure_resolved' || ctx.type === 'closure_no_response';
 
   // ---- Linguagem, culpa e hostilidade
-  applyLexical(text, BLAME_RULES, out);
-  applyLexical(text, STYLE_RULES, out, (m) => Boolean(ctx.explicitDeadline && ctx.explicitDeadline.toLowerCase().includes(m[0].toLowerCase())));
-  applyLexical(text, PROMISE_RULES, out);
+  // Palavra que o próprio analista registrou no campo de prazo não gera alerta de estilo, pressão nem promessa.
+  const inDeadline = (m: RegExpMatchArray): boolean =>
+    Boolean(ctx.explicitDeadline && ctx.explicitDeadline.toLowerCase().includes(m[0].toLowerCase()));
+  applyLexical(text, BLAME_RULES, out, inDeadline);
+  applyLexical(text, STYLE_RULES, out, inDeadline);
+  applyLexical(text, PROMISE_RULES, out, inDeadline);
   applyLexical(text, CERTAINTY_RULES, out);
 
   const emoji = /\p{Extended_Pictographic}/u.exec(text);
@@ -110,8 +133,10 @@ export function detectTextRisks(text: string, ctx: ReviewContext, profile: Langu
 
   // ---- Caixa alta como ênfase e siglas
   const known = new Set(profile.knownAcronyms.map((a) => a.toUpperCase()));
-  const upperWords = [...text.matchAll(ACRONYM_PATTERN)].map((m) => m[0]);
-  const emphasized = (text.match(/(?<![\p{L}\p{N}])[\p{Lu}]{5,}(?![\p{L}\p{N}])/gu) ?? []).filter((w) => !known.has(w));
+  // Nomes de variável (DB_PASSWORD, API_KEY, NOME=valor) não são ênfase nem sigla; quando carregam segredo, o bloqueio já avisa.
+  const prose = text.replace(IDENTIFIER_PATTERN, ' ');
+  const upperWords = [...prose.matchAll(ACRONYM_PATTERN)].map((m) => m[0]);
+  const emphasized = (prose.match(/(?<![\p{L}\p{N}])[\p{Lu}]{5,}(?![\p{L}\p{N}])/gu) ?? []).filter((w) => !known.has(w));
   if (emphasized.length >= 1) {
     out.push({
       code: 'all_caps_emphasis',
@@ -158,7 +183,7 @@ export function detectTextRisks(text: string, ctx: ReviewContext, profile: Langu
       severity: 'warning',
       message: 'O texto cita um prazo que não foi informado no campo de prazo.',
       suggestion: 'Informe o prazo no campo correspondente ou remova a menção. A extensão não promete prazos.',
-      excerpt: excerptOf(text, concrete),
+      ...excerptFields(text, concrete),
       dimension: 'safety',
       penalty: 18,
     });
@@ -172,7 +197,7 @@ export function detectTextRisks(text: string, ctx: ReviewContext, profile: Langu
       severity: 'warning',
       message: 'Causa declarada sem evidência explícita no contexto.',
       suggestion: 'Descreva o que foi observado ou inclua a evidência, e evite afirmar a causa raiz.',
-      excerpt: excerptOf(text, rootCause),
+      ...excerptFields(text, rootCause),
       dimension: 'safety',
       penalty: 18,
     });
@@ -185,7 +210,7 @@ export function detectTextRisks(text: string, ctx: ReviewContext, profile: Langu
         severity: 'warning',
         message: 'O texto afirma resolução fora de um encerramento solucionado.',
         suggestion: 'Descreva a ação e o resultado observado. Afirme resolução apenas com validação registrada.',
-        excerpt: excerptOf(text, claim),
+        ...excerptFields(text, claim),
         dimension: 'safety',
         penalty: 18,
       });
@@ -222,7 +247,7 @@ export function detectTextRisks(text: string, ctx: ReviewContext, profile: Langu
           severity: 'warning',
           message: 'O texto de encerramento menciona pendência ou continuidade, o que é inconsistente.',
           suggestion: 'Revise: um chamado solucionado não deve conter pendências.',
-          excerpt: excerptOf(text, invalid),
+          ...excerptFields(text, invalid),
           dimension: 'safety',
           penalty: 20,
         });
