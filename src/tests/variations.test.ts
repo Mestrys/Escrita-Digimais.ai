@@ -23,7 +23,7 @@ const CONTEXT = {
 
 const PROFILE_OPEN = profileWith({ closureRules: { ...DEFAULT_PROFILE.closureRules, noResponseEnabled: true } });
 const FORMALITIES = ['cordial', 'formal', 'direct'] as const;
-const variants = Array.from({ length: 8 }, (_, v) => v);
+const variants = Array.from({ length: 64 }, (_, v) => v);
 
 describe('variantIndexes (índice de variação por seção)', () => {
   it('a variação 0 usa o primeiro item de todas as listas', () => {
@@ -56,10 +56,10 @@ describe('variantIndexes (índice de variação por seção)', () => {
 });
 
 describe('variações do texto gerado', () => {
-  it('"Outra variação" agora percorre 8 textos distintos para solicitar informações', () => {
+  it('"Outra variação" percorre 64 textos distintos para solicitar informações e só então repete', () => {
     const texts = variants.map((variant) => gen('request_information', CONTEXT, { variant }).text);
-    expect(new Set(texts).size).toBe(8);
-    expect(gen('request_information', CONTEXT, { variant: 8 }).text).toBe(texts[0]);
+    expect(new Set(texts).size).toBe(64);
+    expect(gen('request_information', CONTEXT, { variant: 64 }).text).toBe(texts[0]);
   });
 
   it('é determinístico: a mesma variação gera sempre o mesmo texto', () => {
@@ -82,8 +82,13 @@ describe('variações do texto gerado', () => {
       for (const formality of FORMALITIES) {
         const base = gen(type, CONTEXT, { formality, variant: 0, recipient: type === 'technical_note' ? 'technical_team' : 'user' }, PROFILE_OPEN);
         if (base.blocked) continue;
+        const baseM = gen(type, CONTEXT, { formality, variant: 0, recipient: type === 'technical_note' ? 'technical_team' : 'manager' }, PROFILE_OPEN);
         for (const variant of variants) {
           const r = gen(type, CONTEXT, { formality, variant, recipient: type === 'technical_note' ? 'technical_team' : 'user' }, PROFILE_OPEN);
+          const m = gen(type, CONTEXT, { formality, variant, recipient: type === 'technical_note' ? 'technical_team' : 'manager' }, PROFILE_OPEN);
+          if (!m.blocked) {
+            expect(codes(m).filter((c) => !codes(baseM).includes(c)), `gestor ${type}/${formality}/v${variant}`).toEqual([]);
+          }
           expect(r.blocked, `${type}/${formality}/v${variant}`).toBe(false);
           const extra = codes(r).filter((c) => !codes(base).includes(c));
           expect(extra, `${type}/${formality}/v${variant}`).toEqual([]);
@@ -93,8 +98,8 @@ describe('variações do texto gerado', () => {
         }
       }
     }
-    expect(checked).toBeGreaterThan(150);
-  });
+    expect(checked).toBeGreaterThan(1500);
+  }, 60_000);
 
   it('tipos sem frases alternativas repetem o texto (sem inventar variação)', () => {
     const a = gen('technical_note', CONTEXT, { variant: 0, recipient: 'technical_team' }).text;
@@ -104,7 +109,7 @@ describe('variações do texto gerado', () => {
 
   it('as listas do perfil da organização também entram na variação', () => {
     const profile = profileWith({ closings: { ...DEFAULT_PROFILE.closings, cordial: ['Obrigado A.', 'Obrigado B.', 'Obrigado C.'] } });
-    const ends = Array.from({ length: 24 }, (_, variant) => gen('request_information', CONTEXT, { variant }, profile).text)
+    const ends = Array.from({ length: 100 }, (_, variant) => gen('request_information', CONTEXT, { variant }, profile).text)
       .map((t) => /Obrigado ([ABC])\./.exec(t)?.[1]);
     expect(new Set(ends)).toEqual(new Set(['A', 'B', 'C']));
   });

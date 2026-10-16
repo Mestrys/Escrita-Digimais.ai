@@ -10,7 +10,7 @@ export type PhraseTable = Record<CommunicationType, Record<Formality, string[]>>
 
 const none: Record<Formality, string[]> = { cordial: [], formal: [], direct: [] };
 
-export const DEFAULT_OPENINGS: PhraseTable = {
+const BASE_OPENINGS: PhraseTable = {
   request_information: {
     cordial: [
       'Para continuarmos a análise, precisamos de algumas informações.',
@@ -100,7 +100,7 @@ export const DEFAULT_OPENINGS: PhraseTable = {
   guided_free_text: none,
 };
 
-export const DEFAULT_TYPE_CLOSINGS: PhraseTable = {
+const BASE_TYPE_CLOSINGS: PhraseTable = {
   request_information: {
     cordial: ['O seu retorno permitirá que continuemos a análise.', 'Com o seu retorno, conseguiremos dar andamento à análise.'],
     formal: ['O retorno dessas informações permitirá a continuidade da análise.', 'O envio dessas informações viabilizará a continuidade da análise.'],
@@ -119,11 +119,7 @@ export const DEFAULT_TYPE_CLOSINGS: PhraseTable = {
     formal: ['A confirmação permitirá registrar o resultado do atendimento.', 'A sua confirmação possibilitará o registro do resultado do atendimento.'],
     direct: ['Com a confirmação, registramos o resultado.', 'Precisamos da confirmação para registrar o resultado.'],
   },
-  closure_resolved: {
-    cordial: ['O chamado foi encerrado com base no resultado descrito acima.', 'O encerramento foi feito com base no resultado descrito acima.'],
-    formal: ['O encerramento foi registrado com base no resultado descrito acima.', 'O encerramento fundamenta-se no resultado descrito acima.'],
-    direct: ['Encerramento baseado no resultado descrito acima.', 'Encerrado com base no resultado acima.'],
-  },
+  closure_resolved: none,
   closure_no_response: none,
   redirect_or_escalate: {
     cordial: ['O atendimento seguirá com a equipe indicada.', 'A equipe indicada dará continuidade ao atendimento.'],
@@ -132,6 +128,90 @@ export const DEFAULT_TYPE_CLOSINGS: PhraseTable = {
   },
   guided_free_text: none,
 };
+
+type PartialTable = Partial<Record<CommunicationType, Partial<Record<Formality, string[]>>>>;
+
+/**
+ * Redações adicionais. Ficam sempre depois das originais: a variação 0 e os textos já validados não mudam.
+ * Regras: pt-BR, sem travessão, sem emoji, sem caixa alta para ênfase, sem prazo, culpa, promessa ou marcador de
+ * solução fora dos tipos de encerramento. O teste de variações percorre todas as combinações.
+ */
+const EXTRA_OPENINGS: PartialTable = {
+  request_information: {
+    cordial: ['Precisamos da sua ajuda com algumas informações para seguir com o atendimento.', 'Para avançarmos com o seu chamado, pedimos que nos envie as informações abaixo.'],
+    formal: ['Para a continuidade deste atendimento, solicitamos o envio das informações a seguir.', 'Pedimos a gentileza de informar os itens abaixo para que a análise prossiga.'],
+    direct: ['Para seguir com a análise, precisamos do que está listado abaixo.', 'Envie as informações abaixo para a análise continuar.'],
+  },
+  pending: {
+    cordial: ['Há um ponto em aberto neste atendimento. Seguem os detalhes.', 'Este atendimento depende de um item pendente, descrito abaixo.'],
+    formal: ['Comunicamos que este atendimento depende da pendência descrita abaixo.', 'Registramos que o atendimento aguarda o tratamento da pendência a seguir.'],
+    direct: ['O atendimento depende do item abaixo.', 'Existe um item pendente neste atendimento.'],
+  },
+  manager_approval: {
+    cordial: ['Precisamos da sua aprovação para dar andamento ao item descrito abaixo.', 'Pedimos o seu “De acordo” para seguir com a solicitação abaixo.'],
+    formal: ['Submetemos à sua avaliação o item descrito abaixo, que requer a sua manifestação.', 'Solicitamos a sua análise e manifestação sobre a solicitação descrita abaixo.'],
+    direct: ['Precisamos do seu “De acordo” para a solicitação abaixo.', 'A solicitação abaixo depende da sua manifestação.'],
+  },
+  progress_update: {
+    cordial: ['Seguem as novidades sobre o seu chamado.', 'Atualizamos o andamento do seu atendimento. Veja abaixo.'],
+    formal: ['Prestamos, a seguir, informações sobre o andamento deste atendimento.', 'Segue a atualização sobre o andamento deste chamado.'],
+    direct: ['Atualização do chamado:', 'Situação atual do atendimento:'],
+  },
+  solution_confirmation: {
+    cordial: ['Fizemos os ajustes descritos abaixo. Poderia confirmar se tudo voltou a funcionar?', 'Realizamos as ações descritas abaixo e gostaríamos de saber se a situação foi resolvida para você.'],
+    formal: ['Realizadas as ações descritas abaixo, solicitamos que confirme se a situação foi resolvida.', 'Pedimos que confirme se a situação foi resolvida, após as ações abaixo.'],
+    direct: ['Executamos as ações abaixo. Pode confirmar se a situação foi resolvida?', 'Ações descritas abaixo. Pode confirmar o resultado?'],
+  },
+  closure_resolved: {
+    cordial: ['Este chamado está sendo encerrado, pois a situação foi solucionada. Veja os detalhes abaixo.', 'Encerramos este chamado com a situação solucionada. Seguem os detalhes.'],
+    formal: ['Comunicamos o encerramento deste chamado, com a situação solucionada, conforme abaixo.', 'Este chamado é encerrado com a situação solucionada, conforme o registro abaixo.'],
+    direct: ['Chamado solucionado e encerrado.', 'Situação solucionada. Encerramos o chamado.'],
+  },
+  closure_no_response: {
+    cordial: ['Como não houve retorno às tentativas de contato registradas abaixo, estamos encerrando este chamado.', 'Encerramos este chamado por falta de retorno, após as tentativas de contato abaixo.'],
+    formal: ['Comunicamos o encerramento deste chamado por ausência de retorno, após as tentativas registradas abaixo.', 'Em razão da ausência de retorno às tentativas de contato abaixo, este chamado é encerrado.'],
+    direct: ['Sem retorno às tentativas de contato abaixo. Chamado encerrado.', 'Chamado encerrado por falta de retorno.'],
+  },
+  redirect_or_escalate: {
+    cordial: ['Vamos encaminhar este atendimento para dar sequência à análise. Destino: {destination}.', 'O seu chamado seguirá para outra equipe, que continuará a análise. Destino: {destination}.'],
+    formal: ['Comunicamos o encaminhamento deste atendimento para a continuidade da análise. Destino: {destination}.', 'Este atendimento será encaminhado conforme o motivo descrito abaixo. Destino: {destination}.'],
+    direct: ['Atendimento encaminhado. Destino: {destination}.', 'Estamos encaminhando o atendimento. Destino: {destination}.'],
+  },
+};
+
+const EXTRA_TYPE_CLOSINGS: PartialTable = {
+  request_information: {
+    cordial: ['Assim que recebermos esses dados, seguimos com a análise.', 'Com essas informações, conseguimos avançar com o seu chamado.'],
+    formal: ['Com o envio das informações, a análise poderá prosseguir.', 'A resposta a estes itens é necessária para a continuidade da análise.'],
+    direct: ['Com as informações, a análise segue.', 'Retornando os itens, retomamos a análise.'],
+  },
+  pending: {
+    cordial: ['Assim que o item acima for tratado, voltamos a cuidar do seu atendimento.', 'Quando o item acima estiver finalizado, retomamos o atendimento.'],
+    formal: ['Finalizado o item acima, o atendimento será retomado.', 'A retomada do atendimento depende do tratamento do item acima.'],
+    direct: ['Retomamos o atendimento após o item acima.', 'Retomamos assim que o item acima for finalizado.'],
+  },
+  solution_confirmation: {
+    cordial: ['A sua confirmação nos ajuda a registrar o resultado corretamente.', 'Com a sua resposta, registramos o resultado do atendimento.'],
+    formal: ['A confirmação é necessária para o registro do resultado do atendimento.', 'Com a sua confirmação, será possível registrar o resultado do atendimento.'],
+    direct: ['Confirmando, registramos o resultado.', 'A sua resposta define o registro do resultado.'],
+  },
+  redirect_or_escalate: {
+    cordial: ['A equipe indicada vai assumir a partir daqui.', 'Daqui em diante, a equipe indicada cuida do atendimento.'],
+    formal: ['A equipe indicada assumirá a continuidade do atendimento.', 'O atendimento prossegue sob responsabilidade da equipe indicada.'],
+    direct: ['A equipe indicada assume o atendimento.', 'Daqui, o atendimento é da equipe indicada.'],
+  },
+};
+
+function withExtras(base: PhraseTable, extra: PartialTable): PhraseTable {
+  const out = structuredClone(base);
+  for (const [type, byFormality] of Object.entries(extra) as [CommunicationType, Partial<Record<Formality, string[]>>][]) {
+    for (const [formality, list] of Object.entries(byFormality) as [Formality, string[]][]) out[type][formality].push(...list);
+  }
+  return out;
+}
+
+export const DEFAULT_OPENINGS: PhraseTable = withExtras(BASE_OPENINGS, EXTRA_OPENINGS);
+export const DEFAULT_TYPE_CLOSINGS: PhraseTable = withExtras(BASE_TYPE_CLOSINGS, EXTRA_TYPE_CLOSINGS);
 
 export const DEFAULT_LABELS: Record<TechLevel, Record<LabelKey, string>> = {
   balanced: {
@@ -204,6 +284,33 @@ export const LABEL_OVERRIDES: Partial<Record<CommunicationType, Partial<Record<L
   redirect_or_escalate: { actions_done: 'Verificações já realizadas', expected_action: 'Continuidade esperada' },
 };
 
+/**
+ * Frases de ligação do estilo natural, no lugar dos rótulos secos. Duas variações por seção, escolhidas
+ * pelo índice de variação. Aplicadas só a textos para pessoas (usuário, gestor, outro) e só quando a
+ * organização não definiu rótulos próprios no perfil.
+ */
+export const LEAD_SIZE = 4;
+export const NATURAL_LEADS: Partial<Record<LabelKey, readonly string[]>> = {
+  context: ['Resumo da situação', 'Sobre o seu atendimento', 'Situação registrada', 'O que motivou o chamado'],
+  actions_done: ['O que já fizemos', 'Até aqui, realizamos', 'Já realizamos as seguintes ações', 'O que fizemos até agora'],
+  actions_planned: ['Os próximos passos são', 'Em seguida, faremos o seguinte', 'O que faremos a seguir', 'Planejamos as seguintes ações'],
+  result: ['O que observamos', 'Resultado até o momento', 'O que encontramos', 'Resultado das verificações'],
+  pending: ['O que ainda está pendente', 'Pendência no momento', 'O que falta tratar', 'Ponto ainda em aberto'],
+  questions: ['Para avançarmos, precisamos saber', 'Pode nos ajudar com as informações abaixo', 'Precisamos que nos informe', 'Para seguir, pedimos estas informações'],
+};
+
+/** Quem age em "ação esperada" muda conforme o destinatário. */
+export const NATURAL_EXPECTED_ACTION: Record<'person' | 'manager', readonly string[]> = {
+  person: ['O que precisamos de você', 'Próximo passo do seu lado', 'Precisamos de você para avançar', 'Próximo passo a seu cargo'],
+  manager: ['Ação esperada do gestor', 'Ação esperada nesta etapa', 'Próximo passo esperado do gestor', 'Ação esperada para o avanço do atendimento'],
+};
+
+/** Aberturas de frase corrida para ações feitas e planejadas. */
+export const FLOW_LEADS = {
+  done: ['Até aqui, ', 'Nesta etapa, ', 'Até o momento, ', 'Por enquanto, '],
+  planned: ['Em seguida, ', 'Na sequência, ', 'Depois disso, ', 'Como próximo passo, '],
+} as const;
+
 /** Frases fixas por formalidade, usadas em seções específicas. */
 export const FIXED_PHRASES = {
   approval_response: {
@@ -215,6 +322,12 @@ export const FIXED_PHRASES = {
   user_not_confirmed: 'Até o momento do encerramento, não há registro de confirmação do usuário sobre a solução.',
   no_response_meaning: 'Este encerramento não indica que a situação foi resolvida.',
   notice: 'Aviso prévio de encerramento registrado em {date}.',
+} as const;
+
+/** Versões das frases fixas para quando o texto é escrito ao próprio usuário (estilo natural). */
+export const FIXED_PHRASES_TO_USER = {
+  user_confirmed: 'Você confirmou a solução.',
+  user_not_confirmed: 'Até o momento do encerramento, não há registro de confirmação da sua parte sobre a solução.',
 } as const;
 
 export interface ResolvedTemplates {

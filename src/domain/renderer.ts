@@ -18,7 +18,13 @@ export function renderPlan(plan: MessagePlan): string {
   for (const section of plan.sections) {
     const piece = renderSection(section);
     if (!piece) continue;
-    if (previous) out += previous.kind === 'courtesy' && section.kind === 'signature' ? '\n' : '\n\n';
+    if (previous) {
+      const sameParagraph =
+        previous.group !== undefined && previous.group === section.group && !previous.items?.length && !section.items?.length &&
+        !out.endsWith('\n') && !piece.includes('\n');
+      if (sameParagraph) out += ' ';
+      else out += previous.kind === 'courtesy' && section.kind === 'signature' ? '\n' : '\n\n';
+    }
     out += piece;
     previous = section;
   }

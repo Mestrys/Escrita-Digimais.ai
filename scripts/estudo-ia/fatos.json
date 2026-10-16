@@ -1,0 +1,37 @@
+[
+ {
+  "type": "progress_update",
+  "facts": "Tipo: atualização de andamento\nSituação: usuário sem acesso à VPN desde ontem\nFeito: resetamos a senha no AD; testamos a conexão com a conta do usuário\nResultado: a conexão funcionou no nosso teste\nPendente: aguardando o teste do usuário\nPróximo passo: validar com o usuário amanhã",
+  "draft": "Olá, Maria,\n\nPassamos para informar o andamento do seu chamado.\n\nResumo da situação: Usuário sem acesso à VPN desde ontem.\n\nAté aqui, resetamos a senha no AD e testamos conexão com a conta dele.\n\nO que observamos: Conexão ok no nosso teste.\n\nO que ainda está pendente: Aguardando teste do usuário.\n\nEm seguida, vamos validar com o usuário amanhã.\n\nAgradecemos a colaboração.\nEquipe de Service Desk"
+ },
+ {
+  "type": "solution_confirmation",
+  "facts": "Tipo: confirmação da solução\nSituação: Outlook travando ao abrir anexos\nFeito: reparamos o perfil do Outlook; limpamos o cache\nResultado: os anexos estão abrindo normalmente\nPedido: confirmar se a situação foi resolvida",
+  "draft": "Olá, João,\n\nRealizamos as ações descritas abaixo e gostaríamos de confirmar se a situação foi resolvida.\n\nResumo da situação: Outlook travando ao abrir anexos.\n\nAté aqui, reparamos o perfil do outlook e limpamos o cache.\n\nO que observamos: Anexos abrindo normalmente.\n\nA sua confirmação nos permitirá registrar o resultado do atendimento.\n\nAgradecemos a colaboração.\nEquipe de Service Desk"
+ },
+ {
+  "type": "request_information",
+  "facts": "Tipo: pedido de informações\nSituação: erro ao abrir a planilha de custos\nPerguntas: 1. Qual mensagem de erro aparece na tela? 2. O erro ocorre com outros arquivos?\nPrazo: 20/10/2026 às 17h",
+  "draft": "Olá, Ana,\n\nPara continuarmos a análise, precisamos de algumas informações.\n\nResumo da situação: Erro ao abrir a planilha de custos.\n\nPara avançarmos, precisamos saber:\n1. Qual mensagem de erro aparece na tela?\n2. O erro ocorre com outros arquivos?\n\nPrazo para retorno: 20/10/2026 às 17h\n\nPor segurança, não envie senhas, tokens ou outros dados de acesso neste chamado.\n\nO seu retorno permitirá que continuemos a análise.\n\nAgradecemos a colaboração.\nEquipe de Service Desk"
+ },
+ {
+  "type": "pending",
+  "facts": "Tipo: registro de pendência\nPendente: envio da planilha corrigida\nPendente com: o usuário\nAção esperada: enviar o arquivo atualizado",
+  "draft": "Olá, Carlos,\n\nO atendimento permanece pendente. Seguem os detalhes.\n\nO que ainda está pendente: Envio da planilha corrigida.\n\nO que precisamos de você: Enviar o arquivo atualizado.\n\nAguardamos a conclusão do item acima para seguirmos com o atendimento.\n\nAgradecemos a colaboração.\nEquipe de Service Desk"
+ },
+ {
+  "type": "closure_resolved",
+  "facts": "Tipo: encerramento com solução\nSituação: impressora não imprimia\nFeito: reinstalamos o driver da impressora\nResultado validado: página de teste impressa e confirmada\nConfirmação do usuário: sim",
+  "draft": "Olá, Paula,\n\nEstamos encerrando este chamado com a situação solucionada, conforme descrito abaixo.\n\nResumo da situação: Impressora não imprimia.\n\nAté aqui, reinstalamos o driver da impressora.\n\nResultado validado: Página de teste impressa e confirmada.\n\nO usuário confirmou a solução.\n\nSe precisar de apoio novamente, entre em contato conosco.\n\nAgradecemos a colaboração.\nEquipe de Service Desk"
+ },
+ {
+  "type": "manager_approval",
+  "facts": "Tipo: pedido de De acordo ao gestor\nObjeto: instalação do software de modelagem no equipamento patrimonial 00123\nJustificativa: necessário para o fechamento mensal\nEfeito da aprovação: a instalação será agendada\nResposta esperada: “De acordo” ou “Não aprovado”",
+  "draft": "Prezado(a) gestor(a),\n\nSolicitamos a sua manifestação formal quanto ao item descrito abaixo.\n\nObjeto da aprovação: Instalação do software de modelagem no equipamento patrimonial 00123.\n\nJustificativa: Necessário para o fechamento mensal.\n\nEfeito da aprovação: A instalação será agendada.\n\nSolicitamos que a manifestação seja registrada como “De acordo” ou “Não aprovado”.\n\nAtenciosamente,\nEquipe de Service Desk"
+ },
+ {
+  "type": "redirect_or_escalate",
+  "facts": "Tipo: encaminhamento\nDestino: Equipe de Infraestrutura\nMotivo: a análise exige acesso administrativo ao armazenamento\nJá verificado: validamos as permissões do usuário",
+  "draft": "Olá, Lucia,\n\nPara que a análise tenha continuidade, estamos encaminhando este atendimento. Destino: Equipe de Infraestrutura.\n\nMotivo do encaminhamento: A análise exige acesso administrativo ao armazenamento.\n\nAté aqui, validamos as permissões do usuário.\n\nO atendimento seguirá com a equipe indicada.\n\nAgradecemos a colaboração.\nEquipe de Service Desk"
+ }
+]

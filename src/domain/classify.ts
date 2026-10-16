@@ -25,6 +25,7 @@ export interface ClassifiedContext {
   destinationTeam?: string;
   escalationReason?: string;
   freeIntent?: string;
+  requesterName?: string;
   actionsDone: string[];
   actionsPlanned: string[];
   evidence: string[];
@@ -66,6 +67,7 @@ export function classifyContext(context: TicketContext): ClassifiedContext {
     destinationTeam: context.destinationTeam,
     escalationReason: context.escalationReason,
     freeIntent: context.freeIntent,
+    requesterName: context.requesterName,
     actionsDone,
     actionsPlanned,
     evidence: context.evidence ?? [],

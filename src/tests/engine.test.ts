@@ -209,8 +209,11 @@ describe('encerramentos', () => {
   it('não declara validação do usuário sem confirmação', () => {
     const r = gen('closure_resolved', { ...FULL.closure_resolved, userConfirmation: 'unknown' });
     expect(r.blocked).toBe(false);
-    expect(r.text).toContain('não há registro de confirmação do usuário');
-    expect(r.text).not.toContain('O usuário confirmou');
+    expect(r.text).toContain('não há registro de confirmação da sua parte');
+    expect(r.text).not.toContain('Você confirmou');
+    const m = gen('closure_resolved', { ...FULL.closure_resolved, userConfirmation: 'unknown' }, { recipient: 'manager' });
+    expect(m.text).toContain('não há registro de confirmação do usuário');
+    expect(m.text).not.toContain('O usuário confirmou');
   });
 
   it('resultado com incerteza gera alerta', () => {

@@ -8,6 +8,8 @@ import { validateOverlay } from '../config/profile-overlay';
 import type { ProfileOverlay } from '../config/profile-overlay';
 import { dayString, emptyCounters, sanitizeCounters } from '../application/usage-counters';
 import type { UsageCounters } from '../application/usage-counters';
+import { emptyStats, sanitizeStats } from '../application/style-learning';
+import type { LearnedStats } from '../application/style-learning';
 
 /** Subconjunto mínimo de chrome.storage.StorageArea, injetável em testes. */
 export interface StorageArea {
@@ -23,6 +25,7 @@ export const STORAGE_KEYS = {
   profileSignature: 'profileSignature',
   overlay: 'profileOverlay',
   usageCounters: 'usageCounters',
+  learnedStyle: 'learnedStyle',
 } as const;
 export const ALLOWED_KEYS: string[] = Object.values(STORAGE_KEYS);
 
@@ -146,6 +149,25 @@ export class AppStorage {
 
   async resetCounters(): Promise<void> {
     await this.local?.remove(STORAGE_KEYS.usageCounters);
+  }
+
+  /** Preferências de redação aprendidas (só índices em chaves fechadas). Sempre sanitizadas. */
+  async loadLearning(): Promise<LearnedStats> {
+    if (!this.local) return emptyStats();
+    try {
+      const data = await this.local.get(STORAGE_KEYS.learnedStyle);
+      return sanitizeStats(data[STORAGE_KEYS.learnedStyle]);
+    } catch {
+      return emptyStats();
+    }
+  }
+
+  async saveLearning(stats: LearnedStats): Promise<void> {
+    await this.local?.set({ [STORAGE_KEYS.learnedStyle]: sanitizeStats(stats) });
+  }
+
+  async resetLearning(): Promise<void> {
+    await this.local?.remove(STORAGE_KEYS.learnedStyle);
   }
 
   async clearAll(): Promise<void> {

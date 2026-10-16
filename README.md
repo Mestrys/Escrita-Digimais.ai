@@ -103,6 +103,8 @@ A interface segue o Material Design 3: papéis de cor tonais (tema claro e escur
 - Proteção da `main` e demais ajustes de administração: [docs/GOVERNANCA.md](docs/GOVERNANCA.md).
 
 ## Uso
+0. **Redação natural (padrão para texto a pessoas)**: o texto usa frases de ligação, fala em nome da equipe ("resetei" vira "resetamos", por lista fechada de verbos, com alerta informativo do que mudou) e pode saudar pelo primeiro nome. Quando o texto é para o próprio usuário, referências a ele em terceira pessoa passam para "você"/"seu" (por lista fechada, com aviso do que mudou), e fatos e próximos passos formam parágrafos. O estilo **Estruturada** mantém rótulos fixos e as suas palavras exatamente como digitadas. Notas técnicas e textos para equipe técnica ou fornecedor não mudam.
+0. **Rascunho livre (opcional)**: em "Contexto", cole a sua anotação bruta e clique em "Dividir em campos". A extensão sugere em qual campo cada trecho entra (contexto, ação feita ou planejada, resultado, pendência, ação esperada, pergunta), você confere e corrige, e só então o formulário é preenchido, sem sobrescrever o que já estiver escrito. Dado que bloqueia a geração impede a divisão.
 1. Escolha o tipo de comunicação e o destinatário (o destinatário aplica nível técnico e formalidade sugeridos, até você alterar manualmente).
 2. Preencha os campos exibidos para o tipo. Campos opcionais ficam em “Campos opcionais”.
 3. Confira o painel “Possíveis dados sensíveis”. Credenciais bloqueiam a geração. Outros dados podem ser substituídos por marcador com um clique (e desfeitos).

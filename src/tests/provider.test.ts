@@ -35,7 +35,7 @@ describe('provedores de geração', () => {
     const out = await generateWithFallback(remote, { input, profile: DEFAULT_PROFILE });
     expect(out.usedFallback).toBe(true);
     expect(out.notice?.code).toBe('provider_fallback');
-    expect(out.result.text).toContain('Verificado o log');
+    expect(out.result.text).toContain('verificamos o log');
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 

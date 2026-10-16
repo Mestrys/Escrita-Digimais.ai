@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { emptyContent, initialForm, TEXT_FORM_FIELDS, toGenerationInput } from '../application/form';
 import type { FormState, TextFormField } from '../application/form';
 import { DEFAULT_PREFERENCES } from '../application/preferences';
+import { acceptedEvents, draftBias, emptyStats, preferredIndexes, rejectedEvents, StyleLearner } from '../application/style-learning';
+import type { LearnedStats } from '../application/style-learning';
 import {
   effectiveUsageMode, exportCounters, generationKeys, timeBucket, UsageRecorder,
 } from '../application/usage-counters';
@@ -12,7 +14,7 @@ import type { ReviewFormState } from '../application/review-form';
 import { createProvider, DISABLED_AI_POLICY, generateWithFallback } from '../application/provider';
 import type { AiPolicy, TextGenerationProvider } from '../application/provider';
 import {
-  FIELD_META, fieldHint, fieldLabel, FORMALITY_LABELS, LENGTH_LABELS, RECIPIENT_LABELS, TECH_LEVEL_LABELS, TYPE_FIELDS,
+  FIELD_META, fieldHint, fieldLabel, FORMALITY_LABELS, LENGTH_LABELS, RECIPIENT_LABELS, TECH_LEVEL_LABELS, TEXT_STYLE_LABELS, TYPE_FIELDS,
 } from '../config/fields';
 import { DEFAULT_PROFILE } from '../config/language-profile';
 import { exportProfileJson } from '../config/profile-schema';
@@ -23,7 +25,7 @@ import { reviewText } from '../domain/review';
 import type { ReviewResult } from '../domain/review';
 import { scanText } from '../domain/sensitive';
 import { SUFFICIENCY_MATRIX } from '../domain/sufficiency';
-import { COMMUNICATION_TYPES, FORMALITIES, LENGTHS, RECIPIENTS, TECH_LEVELS } from '../domain/types';
+import { COMMUNICATION_TYPES, FORMALITIES, LENGTHS, RECIPIENTS, TECH_LEVELS, TEXT_STYLES } from '../domain/types';
 import type {
   CommunicationType, ContextField, GenerationResult, LanguageProfile, QualityScore, SensitiveFinding, Warning,
 } from '../domain/types';
@@ -31,6 +33,8 @@ import { copyText } from '../infrastructure/clipboard';
 import { AppStorage } from '../infrastructure/storage';
 import { loadAiPolicy, loadSigningKeys, loadUsagePolicy } from '../infrastructure/policy';
 import { DiffView } from './components/DiffView';
+import { DraftPanel } from './components/DraftPanel';
+import type { DraftFields } from '../domain/draft';
 import { FieldControl } from './components/FieldControl';
 import type { Requirement } from './components/FieldControl';
 import { QualityPanel, WarningsList } from './components/ReviewPanel';
@@ -95,6 +99,8 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
   const [signingKeys, setSigningKeys] = useState<string[]>([]);
   const [usagePolicy, setUsagePolicy] = useState<UsagePolicy>('optional');
   const [usageTotal, setUsageTotal] = useState(0);
+  const [learned, setLearned] = useState<LearnedStats>(emptyStats);
+  const [draftKey, setDraftKey] = useState(0);
   const [result, setResult] = useState<GenerationResult | null>(null);
   const [text, setText] = useState('');
   const [initialText, setInitialText] = useState('');
@@ -126,6 +132,21 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
   );
   const usage = effectiveUsageMode(usagePolicy, prefs.usageCounters);
   useEffect(() => recorder.setEnabled(usage.enabled), [recorder, usage.enabled]);
+  // Aprendizado de redação: opt-in do analista, desligado por política quando a organização proíbe contadores locais.
+  const learning = { enabled: prefs.learnStyle && usagePolicy !== 'off', locked: usagePolicy === 'off' };
+  const learner = useMemo(
+    () => new StyleLearner({ load: () => store.loadLearning(), save: (s) => store.saveLearning(s) }),
+    [store],
+  );
+  useEffect(() => learner.setEnabled(learning.enabled), [learner, learning.enabled]);
+  const shownChoices = useRef<GenerationResult['choices']>(undefined);
+  const acceptedAt = useRef(0);
+  const remember = useCallback(
+    (events: Parameters<StyleLearner['record']>[0]): void => {
+      void learner.record(events).then(() => learner.snapshot()).then(setLearned);
+    },
+    [learner],
+  );
 
   useEffect(() => {
     let alive = true;
@@ -142,7 +163,8 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
       setSigningKeys(keys);
       setOverlay(ov);
       setUsagePolicy(usagePol);
-      setForm((f) => ({ ...f, techLevel: p.techLevel, formality: p.formality, length: p.length }));
+      setLearned(await store.loadLearning());
+      setForm((f) => ({ ...f, techLevel: p.techLevel, formality: p.formality, length: p.length, textStyle: p.textStyle }));
     })();
     return () => {
       alive = false;
@@ -183,6 +205,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
   }, []);
 
   const clearContent = useCallback(() => {
+    setDraftKey((k) => k + 1);
     setForm((f) => ({ ...f, ...emptyContent(), variant: 0 }));
     setResult(null);
     setText('');
@@ -299,7 +322,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     touch();
   };
 
-  const setStyle = (name: 'techLevel' | 'formality' | 'length', value: string): void => {
+  const setStyle = (name: 'techLevel' | 'formality' | 'length' | 'textStyle', value: string): void => {
     touched.current.add(name);
     setForm((f) => ({ ...f, [name]: value }));
     touch();
@@ -329,8 +352,14 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     setBusy(true);
     setCopied('none');
     const provider = providerFactory(policy);
-    const outcome = await generateWithFallback(provider, { input: toGenerationInput(next), profile, now: now?.() });
+    const input = toGenerationInput(next);
+    if (learning.enabled) input.settings.learned = preferredIndexes(learned, next.type, next.formality);
+    const outcome = await generateWithFallback(provider, { input, profile, now: now?.() });
     const r = outcome.result;
+    if (isVariant && shownChoices.current && r.choices) {
+      remember(rejectedEvents(shownChoices.current, r.choices, next.type, next.formality));
+    }
+    shownChoices.current = r.choices;
     setResult(outcome.notice ? { ...r, warnings: [...r.warnings, outcome.notice] } : r);
     setText(r.text);
     setInitialText(r.text);
@@ -366,6 +395,10 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     const ok = await copy(text);
     setCopied(ok ? 'ok' : 'fail');
     if (ok) void recorder.record(['copy', `time_to_copy.${timeBucket(Date.now() - generatedAt.current)}`]);
+    if (ok && result?.choices && acceptedAt.current !== generatedAt.current) {
+      acceptedAt.current = generatedAt.current;
+      remember(acceptedEvents(result.choices, form.type, form.formality));
+    }
     setLive(ok ? 'Texto copiado.' : 'Não foi possível copiar. Selecione o texto e copie manualmente.');
   };
 
@@ -477,6 +510,33 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     a.download = 'contadores-de-uso.json';
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const applyDraft = (fields: DraftFields): void => {
+    const keyOf: Record<keyof DraftFields, TextFormField> = {
+      summary: 'summary', actions: 'actions', observedResult: 'observedResult', pendingItem: 'pendingItem',
+      expectedAction: 'expectedAction', questions: 'questions', notes: 'notes',
+    };
+    setForm((f) => {
+      const next = { ...f };
+      for (const [k, value] of Object.entries(fields) as [keyof DraftFields, string][]) {
+        const name = keyOf[k];
+        const current = next[name].trim();
+        // Nunca sobrescreve: se o campo já tem texto, o novo conteúdo entra depois, em outra linha.
+        if (!current) next[name] = value;
+        else if (!current.includes(value)) next[name] = `${current}\n${value}`;
+      }
+      return next;
+    });
+    touch();
+    setLive('Campos preenchidos a partir da anotação. Revise e ajuste antes de gerar.');
+  };
+
+  const onResetLearning = async (): Promise<void> => {
+    await learner.snapshot();
+    await store.resetLearning();
+    setLearned(emptyStats());
+    setLive('Preferências de redação zeradas.');
   };
 
   const onResetUsage = async (): Promise<void> => {
@@ -629,6 +689,8 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
             onImportOverlay={onImportOverlay}
             onRemoveOverlay={() => void onRemoveOverlay()}
             usage={{ ...usage, policy: usagePolicy, total: usageTotal }}
+            learn={{ ...learning, total: Object.values(learned.counts).reduce((a, b) => a + b, 0) }}
+            onResetLearning={() => void onResetLearning()}
             onExportUsage={() => void onExportUsage()}
             onResetUsage={() => void onResetUsage()}
           />
@@ -673,6 +735,15 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
           </div>
 
           <h2>2. Contexto</h2>
+          <DraftPanel
+            key={draftKey}
+            available={new Set<ContextField>([...fields.main, ...fields.advanced])}
+            internalDomains={profile.internalDomains}
+            bias={learning.enabled ? draftBias(learned) : {}}
+            onApply={applyDraft}
+            onEvent={(e) => void recorder.record(e)}
+            onFixes={(fixes) => { void learner.recordFixes(fixes).then(() => learner.snapshot()).then(setLearned); }}
+          />
           {fields.main.map(renderField)}
           <details>
             <summary>Campos opcionais</summary>
@@ -697,6 +768,12 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
               <label htmlFor="length">Tamanho</label>
               <select id="length" value={form.length} onChange={(e) => setStyle('length', e.target.value)}>
                 {LENGTHS.map((v) => <option key={v} value={v}>{LENGTH_LABELS[v]}</option>)}
+              </select>
+            </div>
+            <div className="field">
+              <label htmlFor="textStyle">Redação</label>
+              <select id="textStyle" value={form.textStyle} onChange={(e) => setStyle('textStyle', e.target.value)}>
+                {TEXT_STYLES.map((v) => <option key={v} value={v}>{TEXT_STYLE_LABELS[v]}</option>)}
               </select>
             </div>
           </div>

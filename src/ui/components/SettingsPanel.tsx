@@ -4,8 +4,8 @@ import { AUTO_CLEAR_OPTIONS } from '../../application/preferences';
 import type { Preferences } from '../../application/preferences';
 import type { ProfileOverlay } from '../../config/profile-overlay';
 import type { UsagePolicy } from '../../application/usage-counters';
-import { FORMALITY_LABELS, LENGTH_LABELS, TECH_LEVEL_LABELS } from '../../config/fields';
-import { FORMALITIES, LENGTHS, TECH_LEVELS } from '../../domain/types';
+import { FORMALITY_LABELS, LENGTH_LABELS, TECH_LEVEL_LABELS, TEXT_STYLE_LABELS } from '../../config/fields';
+import { FORMALITIES, LENGTHS, TECH_LEVELS, TEXT_STYLES } from '../../domain/types';
 import type { LanguageProfile } from '../../domain/types';
 
 interface Props {
@@ -21,6 +21,8 @@ interface Props {
   onImportOverlay: (text: string) => Promise<string[]>;
   onRemoveOverlay: () => void;
   usage: { enabled: boolean; locked: boolean; policy: UsagePolicy; total: number };
+  learn: { enabled: boolean; locked: boolean; total: number };
+  onResetLearning: () => void;
   onExportUsage: () => void;
   onResetUsage: () => void;
 }
@@ -45,7 +47,7 @@ const SOURCE_LABEL = { managed: 'política da organização', imported: 'arquivo
 
 export function SettingsPanel({
   prefs, onPrefs, profile, profileSource, onImport, onExport, onResetProfile, signingRequired, overlay, onImportOverlay, onRemoveOverlay,
-  usage, onExportUsage, onResetUsage,
+  usage, learn, onResetLearning, onExportUsage, onResetUsage,
 }: Props) {
   const [errors, setErrors] = useState<string[]>([]);
   const [done, setDone] = useState(false);
@@ -101,6 +103,12 @@ export function SettingsPanel({
           </select>
         </div>
         <div className="field">
+          <label htmlFor="pref-style">Redação padrão</label>
+          <select id="pref-style" value={prefs.textStyle} onChange={(e) => onPrefs({ textStyle: e.target.value as Preferences['textStyle'] })}>
+            {TEXT_STYLES.map((v) => <option key={v} value={v}>{TEXT_STYLE_LABELS[v]}</option>)}
+          </select>
+        </div>
+        <div className="field">
           <label htmlFor="pref-clear">Limpar o conteúdo após inatividade</label>
           <select id="pref-clear" value={prefs.autoClearMinutes} onChange={(e) => onPrefs({ autoClearMinutes: Number(e.target.value) })}>
             {AUTO_CLEAR_OPTIONS.map((v) => (
@@ -136,6 +144,32 @@ export function SettingsPanel({
         <div className="row">
           <button type="button" onClick={onExportUsage}>Exportar contadores</button>
           <button type="button" onClick={onResetUsage}>Zerar contadores</button>
+        </div>
+      </fieldset>
+
+      <fieldset className="stack">
+        <legend className="legend">Aprender minhas preferências de redação (opcional)</legend>
+        <p className="subtle">
+          Quando ligado, a extensão passa a mostrar primeiro as aberturas, fechos e frases de ligação que você mantém e
+          a evitar as que você troca. Também aprende com as correções que você faz ao dividir uma anotação livre. Guarda apenas números (qual das redações prontas foi usada, ou de qual campo para qual um trecho foi movido), nunca o que você
+          digita nem o texto gerado. Fica somente neste navegador e você pode zerar a qualquer momento.
+        </p>
+        {learn.locked ? (
+          <p role="status">Desligado pela política da organização. Não é possível alterar aqui.</p>
+        ) : (
+          <div className="row">
+            <input
+              id="pref-learn"
+              type="checkbox"
+              checked={prefs.learnStyle}
+              onChange={(e) => onPrefs({ learnStyle: e.target.checked })}
+            />
+            <label htmlFor="pref-learn">Aprender com as redações que eu mantenho</label>
+          </div>
+        )}
+        <p className="subtle">Observações registradas: {learn.total}</p>
+        <div className="row">
+          <button type="button" onClick={onResetLearning}>Zerar aprendizado</button>
         </div>
       </fieldset>
 

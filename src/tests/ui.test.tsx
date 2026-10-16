@@ -231,3 +231,20 @@ describe('popup', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(/Não foi possível abrir/);
   });
 });
+
+describe('redação natural na interface', () => {
+  it('saúda pelo primeiro nome e permite voltar à redação estruturada', async () => {
+    const { user } = setup();
+    await user.click(screen.getByText('Campos opcionais'));
+    typeIn(/Nome de quem recebe/, 'Maria Souza');
+    const preview = (await generateRequest(user)) as HTMLTextAreaElement;
+    expect(preview.value.startsWith('Olá, Maria,')).toBe(true);
+    expect(preview.value).toContain('Para avançarmos, precisamos saber:');
+
+    pick('Redação', 'structured');
+    await user.click(screen.getByRole('button', { name: 'Gerar prévia' }));
+    const again = (await screen.findByLabelText('Prévia editável')) as HTMLTextAreaElement;
+    expect(again.value.startsWith('Olá,\n')).toBe(true);
+    expect(again.value).toContain('O que precisamos saber:');
+  });
+});
