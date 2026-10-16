@@ -3,6 +3,8 @@ import { validateProfile } from '../config/profile-schema';
 import { DEFAULT_PREFERENCES, sanitizePreferences } from '../application/preferences';
 import type { Preferences } from '../application/preferences';
 import type { LanguageProfile } from '../domain/types';
+import { validateOverlay } from '../config/profile-overlay';
+import type { ProfileOverlay } from '../config/profile-overlay';
 
 /** Subconjunto mínimo de chrome.storage.StorageArea, injetável em testes. */
 export interface StorageArea {
@@ -12,7 +14,7 @@ export interface StorageArea {
   clear?(): Promise<void>;
 }
 
-export const STORAGE_KEYS = { preferences: 'preferences', profile: 'languageProfile' } as const;
+export const STORAGE_KEYS = { preferences: 'preferences', profile: 'languageProfile', overlay: 'profileOverlay' } as const;
 export const ALLOWED_KEYS: string[] = Object.values(STORAGE_KEYS);
 
 function chromeArea(name: 'local' | 'managed'): StorageArea | null {
@@ -76,6 +78,29 @@ export class AppStorage {
     const check = validateProfile(profile);
     if (!check.ok) throw new Error('Perfil inválido.');
     await this.local?.set({ [STORAGE_KEYS.profile]: check.profile });
+  }
+
+  /** Camada de equipe (somente restritiva). Sempre revalidada na leitura e na gravação. */
+  async loadOverlay(): Promise<ProfileOverlay | null> {
+    try {
+      const data = await this.local?.get(STORAGE_KEYS.overlay);
+      const stored = data?.[STORAGE_KEYS.overlay];
+      if (!stored) return null;
+      const result = validateOverlay(stored);
+      return result.ok ? result.overlay : null;
+    } catch {
+      return null;
+    }
+  }
+
+  async saveOverlay(overlay: ProfileOverlay): Promise<void> {
+    const check = validateOverlay(overlay);
+    if (!check.ok) throw new Error('Camada inválida.');
+    await this.local?.set({ [STORAGE_KEYS.overlay]: check.overlay });
+  }
+
+  async removeOverlay(): Promise<void> {
+    await this.local?.remove(STORAGE_KEYS.overlay);
   }
 
   async clearAll(): Promise<void> {

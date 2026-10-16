@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { ChangeEvent } from 'react';
 import { AUTO_CLEAR_OPTIONS } from '../../application/preferences';
 import type { Preferences } from '../../application/preferences';
+import type { ProfileOverlay } from '../../config/profile-overlay';
 import { FORMALITY_LABELS, LENGTH_LABELS, TECH_LEVEL_LABELS } from '../../config/fields';
 import { FORMALITIES, LENGTHS, TECH_LEVELS } from '../../domain/types';
 import type { LanguageProfile } from '../../domain/types';
@@ -14,13 +15,20 @@ interface Props {
   onImport: (text: string) => Promise<string[]>;
   onExport: () => void;
   onResetProfile: () => void;
+  overlay: ProfileOverlay | null;
+  onImportOverlay: (text: string) => Promise<string[]>;
+  onRemoveOverlay: () => void;
 }
 
 const SOURCE_LABEL = { managed: 'política da organização', imported: 'arquivo importado', default: 'padrão da extensão' } as const;
 
-export function SettingsPanel({ prefs, onPrefs, profile, profileSource, onImport, onExport, onResetProfile }: Props) {
+export function SettingsPanel({
+  prefs, onPrefs, profile, profileSource, onImport, onExport, onResetProfile, overlay, onImportOverlay, onRemoveOverlay,
+}: Props) {
   const [errors, setErrors] = useState<string[]>([]);
   const [done, setDone] = useState(false);
+  const [overlayErrors, setOverlayErrors] = useState<string[]>([]);
+  const [overlayDone, setOverlayDone] = useState(false);
 
   const onFile = async (e: ChangeEvent<HTMLInputElement>): Promise<void> => {
     const file = e.target.files?.[0];
@@ -31,6 +39,16 @@ export function SettingsPanel({ prefs, onPrefs, profile, profileSource, onImport
     const errs = await onImport(text);
     setErrors(errs);
     setDone(errs.length === 0);
+  };
+
+  const onOverlayFile = async (e: ChangeEvent<HTMLInputElement>): Promise<void> => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setOverlayDone(false);
+    const errs = await onImportOverlay(await file.text());
+    setOverlayErrors(errs);
+    setOverlayDone(errs.length === 0);
   };
 
   return (
@@ -95,6 +113,36 @@ export function SettingsPanel({ prefs, onPrefs, profile, profileSource, onImport
           </div>
         )}
         {done && <p role="status" className="panel ok">Perfil importado e validado.</p>}
+      </fieldset>
+
+      <fieldset className="stack">
+        <legend className="legend">Camada da equipe (opcional)</legend>
+        <p className="subtle">
+          Acrescenta regras da sua equipe sobre o perfil acima, somente para restringir: termos proibidos e preferidos,
+          textos obrigatórios, domínios internos, tamanho máximo menor e regras de encerramento mais rígidas. Não altera
+          saudações, assinatura nem modelos, e nunca afrouxa o perfil da organização.
+        </p>
+        {overlay ? (
+          <p>
+            Camada ativa: <strong>{overlay.overlayName}</strong>.
+          </p>
+        ) : (
+          <p className="subtle">Nenhuma camada ativa.</p>
+        )}
+        <div className="row">
+          <div className="field">
+            <label htmlFor="overlay-file">Importar camada da equipe (JSON)</label>
+            <input id="overlay-file" type="file" accept="application/json,.json" onChange={(e) => void onOverlayFile(e)} />
+          </div>
+          {overlay && <button type="button" onClick={onRemoveOverlay}>Remover camada da equipe</button>}
+        </div>
+        {overlayErrors.length > 0 && (
+          <div role="alert" className="panel block">
+            <p className="error-text">Importação da camada recusada. Corrija os itens abaixo:</p>
+            <ul>{overlayErrors.map((er, i) => <li key={i}>{er}</li>)}</ul>
+          </div>
+        )}
+        {overlayDone && <p role="status" className="panel ok">Camada da equipe importada e validada.</p>}
       </fieldset>
     </section>
   );

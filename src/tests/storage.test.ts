@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_PROFILE } from '../config/language-profile';
 import { exportProfileJson } from '../config/profile-schema';
 import { DEFAULT_PREFERENCES, sanitizePreferences } from '../application/preferences';
+import { validateOverlay } from '../config/profile-overlay';
 import { AppStorage, ALLOWED_KEYS } from '../infrastructure/storage';
 import { MemoryArea } from './memory-storage';
 
@@ -54,6 +55,8 @@ describe('persistência', () => {
     await expect(s.saveProfile({ ...DEFAULT_PROFILE, maxLength: 1 })).rejects.toThrow();
     await s.saveProfile(DEFAULT_PROFILE);
     await s.savePreferences({ length: 'short' });
+    const ov = validateOverlay({ schemaVersion: 1, overlayName: 'Equipe', forbiddenTerms: ['x'] });
+    if (ov.ok) await s.saveOverlay(ov.overlay);
     expect(Object.keys(local.data).sort()).toEqual([...ALLOWED_KEYS].sort());
     await s.clearAll();
     expect(local.data).toEqual({});
