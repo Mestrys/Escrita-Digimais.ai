@@ -22,6 +22,7 @@ Atualizar snapshots de template só quando a mudança de texto for intencional: 
 - Textos gerados em pt-BR, sem travessão, sem emoji, sem caixa alta para ênfase.
 - Regras novas: dado em `src/config/vocabulary.ts`, lógica em `src/domain/risks.ts`, teste positivo e negativo.
 - Nunca alterar o texto do analista silenciosamente: alertar, sugerir, e só mudar por ação explícita.
+- Mudou detector de dado sensível? Adicione caso ao corpus (`src/tests/eval/sensitive-corpus.ts`, só dados fictícios) e atualize `docs/AVALIACAO.md` se as métricas mudarem.
 
 ## Restrições de segurança (não negociáveis)
 - Permissões: apenas `sidePanel` e `storage`. Nada de host_permissions, content_scripts, tabs ou clipboardWrite.
