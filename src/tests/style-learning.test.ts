@@ -137,12 +137,12 @@ describe('efeito no motor', () => {
     const learnt = run({ opening: 1 });
     expect(learnt.text).not.toBe(base.text);
     expect(learnt.text).toContain('Registramos uma pendência neste atendimento.');
-    expect(learnt.choices?.opening).toEqual({ index: 1, size: 2 });
+    expect(learnt.choices?.opening).toEqual({ index: 1, size: 4 });
   });
 
   it('a variação continua girando a partir da preferência, e índice fora da faixa é tratado com módulo', () => {
-    expect(run({ opening: 1 }, 1).choices?.opening?.index).toBe(0);
-    expect(run({ opening: 7 }).choices?.opening?.index).toBe(1);
+    expect(run({ opening: 1 }, 1).choices?.opening?.index).toBe(2);
+    expect(run({ opening: 7 }).choices?.opening?.index).toBe(3);
   });
 
   it('a preferência nunca contorna bloqueios nem avisos de segurança', () => {

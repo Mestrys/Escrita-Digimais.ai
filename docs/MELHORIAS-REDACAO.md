@@ -54,6 +54,13 @@ Aprender com o conteúdo dos chamados é incompatível com as regras não negoci
 - **Controle**: opt-in em Configurações, botão "Zerar aprendizado", desligado quando a política `usageCounters` é `off`.
 - **Fora do alcance, de propósito**: não lê nem guarda o que o analista edita no texto; não altera regras de segurança, bloqueios ou alertas.
 
+## 3.2 Catálogo ampliado
+- Aberturas por tipo e formalidade: de 2 para 4 redações (9 tipos que têm abertura). Fechos por tipo: de 2 para 4 nos 4 tipos que os usam. Cortesia do perfil padrão: de 2 para 4 por formalidade.
+- Frases de ligação e de ação esperada: de 2 para 4 (`LEAD_SIZE`), e 4 aberturas para cada frase corrida de ações feitas e planejadas.
+- As redações novas ficam depois das originais: a variação 0 e os textos já validados não mudam. "Outra variação" passa de 8 para 64 textos distintos em "Solicitar informações".
+- Regras de escrita para qualquer redação nova: pt-BR, sem travessão, sem emoji, sem caixa alta, sem prazo, culpa ou promessa; fora dos encerramentos, nada que afirme solução sem pedir confirmação (as regras `resolution_claim` e `pending_without_expected_action` já pegaram duas frases minhas durante o desenvolvimento). O teste de variações percorre as 64 combinações de todos os tipos e formalidades, para destinatário usuário e gestor.
+- O limite de 10 redações por ponto vem do aprendizado (`MAX_INDEX`); o perfil da organização aceita até 6 fechos.
+
 ## 4. Decisões que cabem ao usuário
 - D-IA-1: opção A aprovada e implementada (seção 3.1).
 - D-IA-2: autorizar o uso de amostras reais anonimizadas para treinar a opção B.

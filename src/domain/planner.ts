@@ -1,6 +1,6 @@
 import { BLUEPRINTS, RECORD_SKIPPED, includedAt, isRecordStyle } from '../config/blueprints';
 import type { SectionKind } from '../config/blueprints';
-import { FIXED_PHRASES, LABEL_OVERRIDES, NATURAL_EXPECTED_ACTION, NATURAL_LEADS } from '../config/templates';
+import { FIXED_PHRASES, FLOW_LEADS, LABEL_OVERRIDES, LEAD_SIZE, NATURAL_EXPECTED_ACTION, NATURAL_LEADS } from '../config/templates';
 import type { ResolvedTemplates } from '../config/templates';
 import type { ClassifiedContext } from './classify';
 import { capitalizeFirst, ensureQuestion, ensureTerminalPunctuation, lowerFirst, stripTerminalPunctuation } from './text-utils';
@@ -107,7 +107,7 @@ function flowingActions(items: string[], planned: boolean, variant: number): str
     else if (planned && INFINITIVE.test(item.split(/\s+/u)[0] ?? '')) clauses.push(`vamos ${lowerFirst(item)}`);
     else return undefined;
   }
-  const leads = planned ? ['Em seguida, ', 'Na sequência, '] : ['Até aqui, ', 'Nesta etapa, '];
+  const leads = planned ? FLOW_LEADS.planned : FLOW_LEADS.done;
   return `${leads[Math.abs(variant) % leads.length]}${joinClauses(clauses)}.`;
 }
 
@@ -257,6 +257,6 @@ export function buildPlan(
   if (has('opening') && openingPool.length > 1) choices.opening = { index: openingIdx, size: openingPool.length };
   if (has('type_closing') && typeClosingPool.length > 1) choices.closing = { index: typeClosingIdx, size: typeClosingPool.length };
   if (has('courtesy') && courtesyPool.length > 1) choices.courtesy = { index: courtesyIdx, size: courtesyPool.length };
-  if (natural) choices.lead = { index: ((leadVariant % 2) + 2) % 2, size: 2 };
+  if (natural) choices.lead = { index: ((leadVariant % LEAD_SIZE) + LEAD_SIZE) % LEAD_SIZE, size: LEAD_SIZE };
   return { sections, choices };
 }
