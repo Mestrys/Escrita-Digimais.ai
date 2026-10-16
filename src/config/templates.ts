@@ -102,33 +102,33 @@ export const DEFAULT_OPENINGS: PhraseTable = {
 
 export const DEFAULT_TYPE_CLOSINGS: PhraseTable = {
   request_information: {
-    cordial: ['O seu retorno permitirá que continuemos a análise.'],
-    formal: ['O retorno dessas informações permitirá a continuidade da análise.'],
-    direct: ['Com o retorno, continuamos a análise.'],
+    cordial: ['O seu retorno permitirá que continuemos a análise.', 'Com o seu retorno, conseguiremos dar andamento à análise.'],
+    formal: ['O retorno dessas informações permitirá a continuidade da análise.', 'O envio dessas informações viabilizará a continuidade da análise.'],
+    direct: ['Com o retorno, continuamos a análise.', 'Com as informações, seguimos com a análise.'],
   },
   technical_note: none,
   pending: {
-    cordial: ['Aguardamos a conclusão do item acima para seguirmos com o atendimento.'],
-    formal: ['Aguardamos a conclusão do item acima para a continuidade do atendimento.'],
-    direct: ['Aguardamos a conclusão do item acima.'],
+    cordial: ['Aguardamos a conclusão do item acima para seguirmos com o atendimento.', 'Após a conclusão do item acima, retomaremos o atendimento.'],
+    formal: ['Aguardamos a conclusão do item acima para a continuidade do atendimento.', 'Concluído o item acima, retomaremos o atendimento.'],
+    direct: ['Aguardamos a conclusão do item acima.', 'Aguardamos o item acima para retomar o atendimento.'],
   },
   manager_approval: none,
   progress_update: none,
   solution_confirmation: {
-    cordial: ['A sua confirmação nos permitirá registrar o resultado do atendimento.'],
-    formal: ['A confirmação permitirá registrar o resultado do atendimento.'],
-    direct: ['Com a confirmação, registramos o resultado.'],
+    cordial: ['A sua confirmação nos permitirá registrar o resultado do atendimento.', 'Com a sua confirmação, poderemos registrar o resultado do atendimento.'],
+    formal: ['A confirmação permitirá registrar o resultado do atendimento.', 'A sua confirmação possibilitará o registro do resultado do atendimento.'],
+    direct: ['Com a confirmação, registramos o resultado.', 'Precisamos da confirmação para registrar o resultado.'],
   },
   closure_resolved: {
-    cordial: ['O chamado foi encerrado com base no resultado descrito acima.'],
-    formal: ['O encerramento foi registrado com base no resultado descrito acima.'],
-    direct: ['Encerramento baseado no resultado descrito acima.'],
+    cordial: ['O chamado foi encerrado com base no resultado descrito acima.', 'O encerramento foi feito com base no resultado descrito acima.'],
+    formal: ['O encerramento foi registrado com base no resultado descrito acima.', 'O encerramento fundamenta-se no resultado descrito acima.'],
+    direct: ['Encerramento baseado no resultado descrito acima.', 'Encerrado com base no resultado acima.'],
   },
   closure_no_response: none,
   redirect_or_escalate: {
-    cordial: ['O atendimento seguirá com a equipe indicada.'],
-    formal: ['O atendimento seguirá com a equipe indicada.'],
-    direct: ['O atendimento segue com a equipe indicada.'],
+    cordial: ['O atendimento seguirá com a equipe indicada.', 'A equipe indicada dará continuidade ao atendimento.'],
+    formal: ['O atendimento seguirá com a equipe indicada.', 'A continuidade do atendimento ficará a cargo da equipe indicada.'],
+    direct: ['O atendimento segue com a equipe indicada.', 'A equipe indicada continua o atendimento.'],
   },
   guided_free_text: none,
 };

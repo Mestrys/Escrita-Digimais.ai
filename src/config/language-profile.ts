@@ -45,9 +45,9 @@ export const DEFAULT_PROFILE: LanguageProfile = {
     },
   },
   closings: {
-    cordial: ['Agradecemos a colaboração.'],
-    formal: ['Atenciosamente,'],
-    direct: ['Obrigado.'],
+    cordial: ['Agradecemos a colaboração.', 'Ficamos à disposição.'],
+    formal: ['Atenciosamente,', 'Cordialmente,'],
+    direct: ['Obrigado.', 'Agradecemos.'],
   },
   signature: 'Equipe de Service Desk',
   recipients: {

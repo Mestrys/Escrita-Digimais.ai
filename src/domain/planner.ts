@@ -47,6 +47,23 @@ function pick(list: readonly string[], variant: number): string | undefined {
   return list[((variant % list.length) + list.length) % list.length];
 }
 
+/**
+ * Escolhe um índice de variação independente para cada seção (sistema posicional misto).
+ * A variação 0 usa o primeiro item de todas as listas. Cada incremento avança a primeira lista que
+ * ainda tem opções e "vai um" para a seguinte, então N listas de tamanhos a, b, c geram a x b x c textos
+ * distintos antes de repetir, sempre de forma determinística.
+ */
+export function variantIndexes(variant: number, sizes: readonly number[]): number[] {
+  const total = sizes.reduce((acc, n) => (n > 1 ? acc * n : acc), 1);
+  let rest = ((Math.trunc(variant) % total) + total) % total;
+  return sizes.map((n) => {
+    if (n <= 1) return 0;
+    const digit = rest % n;
+    rest = Math.floor(rest / n);
+    return digit;
+  });
+}
+
 function sentence(text: string): string {
   return ensureTerminalPunctuation(capitalizeFirst(text));
 }
@@ -63,6 +80,14 @@ export function buildPlan(
 ): MessagePlan {
   const { type, recipient, formality, techLevel, length } = settings;
   const variant = settings.variant ?? 0;
+  const openingPool = templates.openings[type][formality];
+  const typeClosingPool = templates.typeClosings[type][formality];
+  const courtesyPool = profile.closings[formality];
+  const [openingIdx, typeClosingIdx, courtesyIdx] = variantIndexes(variant, [
+    openingPool.length,
+    typeClosingPool.length,
+    courtesyPool.length,
+  ]);
   const record = isRecordStyle(type, recipient);
   const vars = { organization: profile.organizationName, destination: c.destinationTeam ?? '' };
   const labels = { ...templates.labels[techLevel], ...(LABEL_OVERRIDES[type] ?? {}) };
@@ -72,7 +97,7 @@ export function buildPlan(
       case 'greeting':
         return { text: profile.greetings[formality][recipient] };
       case 'opening': {
-        const t = pick(templates.openings[type][formality], variant);
+        const t = pick(openingPool, openingIdx);
         return t ? { text: fillPlaceholders(t, vars) } : undefined;
       }
       case 'intent':
@@ -127,7 +152,7 @@ export function buildPlan(
           ? { text: fillPlaceholders(profile.privacyNotice.text, vars) }
           : undefined;
       case 'type_closing': {
-        const t = pick(templates.typeClosings[type][formality], variant);
+        const t = pick(typeClosingPool, typeClosingIdx);
         return t ? { text: fillPlaceholders(t, vars) } : undefined;
       }
       case 'reopen':
@@ -139,7 +164,7 @@ export function buildPlan(
         return texts.length ? { text: [...new Set(texts)].join('\n') } : undefined;
       }
       case 'courtesy': {
-        const t = pick(profile.closings[formality], variant);
+        const t = pick(courtesyPool, courtesyIdx);
         return t ? { text: fillPlaceholders(t, vars) } : undefined;
       }
       case 'signature':

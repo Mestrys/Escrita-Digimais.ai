@@ -25,6 +25,7 @@ Gera sugestões padronizadas para:
 - O motor é determinístico (templates e regras), não um modelo de linguagem. Ele não reescreve livremente nem infere fatos: se faltar informação essencial, pergunta ao analista.
 - A detecção de dados sensíveis e os indicadores de qualidade são heurísticos e podem errar. A revisão humana é obrigatória.
 - O texto livre guiado usa a frase principal exatamente como informada.
+- “Outra variação” alterna frases equivalentes de abertura, fechamento e cortesia, escolhidas por posição (sem sorteio): a mesma sequência de cliques gera sempre os mesmos textos, e os fatos informados não mudam. Há até 8 combinações em tipos como “Solicitar informações”. Tipos sem frases alternativas, como a nota técnica, repetem o texto. A organização amplia as opções no perfil de linguagem.
 
 ## Arquitetura
 ```
