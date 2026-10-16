@@ -55,8 +55,10 @@ Pipeline: normalização, dados sensíveis (bloqueio ou mascaramento), suficiên
 Requisitos: Node.js 20 ou superior.
 ```
 npm ci
-npm run check      # lint, typecheck, testes, build e verificação do pacote
+npm run check      # lint, typecheck, testes, builds e verificação dos pacotes
 npm test           # somente testes
+npm run dev        # build de desenvolvimento em dist-dev/, refeito a cada alteração
+npm run build:dev  # build de desenvolvimento único, com verificação do pacote
 npm run build      # gera dist/
 npm run verify:dist
 npm run package    # gera release/assistente-textos-service-desk-<versão>.zip
@@ -65,16 +67,16 @@ npm run audit:deps # npm audit das dependências de produção
 ```
 
 ## Integração contínua
-O workflow `.github/workflows/ci.yml` roda a cada pull request e a cada push no `main`: `npm ci`, `npm run check` (lint, typecheck, testes, build e verificação do pacote), `npm audit` das dependências de produção e o empacotamento. O `.zip` da extensão fica disponível como artefato da execução por 14 dias. As actions são fixadas por SHA de commit, e o token tem apenas permissão de leitura.
+O workflow `.github/workflows/ci.yml` roda a cada pull request e a cada push no `main`: `npm ci`, `npm run check` (lint, typecheck, testes, builds de produção e de desenvolvimento e verificação dos pacotes), `npm audit` das dependências de produção e o empacotamento. O `.zip` da extensão fica disponível como artefato da execução por 14 dias. As actions são fixadas por SHA de commit, e o token tem apenas permissão de leitura.
 
 ## Carregar no Microsoft Edge
-1. Rode `npm run build`.
-2. Abra `edge://extensions`.
-3. Ative “Modo de desenvolvedor”.
-4. Clique em “Carregar sem compactação” e selecione a pasta `dist/`.
-5. Clique no ícone da extensão e em “Abrir painel lateral”.
+Resumo (o passo a passo completo, com depuração, política de teste e solução de problemas, está em [`docs/DESENVOLVIMENTO-EDGE.md`](docs/DESENVOLVIMENTO-EDGE.md)):
+1. Rode `npm run dev` (desenvolvimento, gera `dist-dev/` e refaz o build a cada alteração) ou `npm run build` (produção, gera `dist/`).
+2. Abra `edge://extensions` e ative “Modo de desenvolvedor”.
+3. Clique em “Carregar sem compactação” e selecione `dist-dev/` ou `dist/` (nunca a raiz do repositório).
+4. Clique no ícone da extensão e em “Abrir painel lateral”.
 
-Requer Edge 116 ou superior (API `chrome.sidePanel.open`).
+Sem Node, use o `.zip` do artefato do CI. Requer Edge 116 ou superior (API `chrome.sidePanel.open`).
 
 ## Qualidade da detecção
 A detecção de dados sensíveis é medida contra um corpus sintético de 112 casos e protegida no CI por pisos de qualidade, com tolerância zero para segredos bloqueantes que escapem. Resultados, falhas conhecidas e limites em [docs/AVALIACAO.md](docs/AVALIACAO.md).

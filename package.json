@@ -10,6 +10,7 @@
   },
   "scripts": {
     "dev": "vite build --watch --mode development",
+    "build:dev": "vite build --mode development && node scripts/postbuild.mjs dist-dev && node scripts/verify-dist.mjs dist-dev",
     "icons": "node scripts/generate-icons.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
@@ -18,7 +19,7 @@
     "build": "tsc --noEmit && vite build && node scripts/postbuild.mjs",
     "verify:dist": "node scripts/verify-dist.mjs",
     "package": "npm run build && node scripts/verify-dist.mjs && node scripts/package.mjs",
-    "check": "npm run lint && npm run typecheck && npm test && npm run build && npm run verify:dist",
+    "check": "npm run lint && npm run typecheck && npm test && npm run build && npm run verify:dist && npm run build:dev",
     "audit:deps": "npm audit --omit=dev"
   },
   "dependencies": {
