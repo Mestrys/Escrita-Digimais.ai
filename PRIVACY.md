@@ -8,7 +8,7 @@ A extensão funciona inteiramente no navegador do analista. Ela não coleta, nã
 ## O que é processado
 | Dado | Onde | Por quanto tempo |
 |---|---|---|
-| Texto digitado nos campos (contexto, ações, perguntas e similares) | Memória do painel lateral | Até o painel ser fechado, o analista limpar, ou o tempo de inatividade configurado expirar (padrão: 15 minutos) |
+| Texto digitado nos campos (contexto, ações, perguntas e similares) | Memória do painel lateral | Até o painel ser fechado, o analista limpar, ou o tempo de inatividade configurado expirar (padrão: 15 minutos). Após uma limpeza manual, uma cópia fica só em memória por 30 segundos para “Desfazer limpeza” e então é descartada (ou imediatamente, se o analista apagar também os dados salvos ou digitar algo novo) |
 | Texto gerado e editado na prévia | Memória do painel lateral | Mesmo critério acima |
 | Resultado da detecção de dados sensíveis | Memória do painel lateral | Mesmo critério acima |
 
@@ -19,7 +19,7 @@ Somente em `chrome.storage.local`, neste navegador:
 - **Preferências**: nível técnico, formalidade, tamanho padrão e tempo de limpeza automática.
 - **Perfil de linguagem importado** (opcional): textos institucionais validados, sem dados de chamados.
 
-Nenhum conteúdo de chamado, texto gerado, histórico ou dado pessoal é armazenado. O botão “Limpar tudo” permite apagar também o que estiver salvo.
+O texto colado no modo “Revisar texto pronto” segue as mesmas regras do restante do conteúdo. Nenhum conteúdo de chamado, texto gerado, histórico ou dado pessoal é armazenado. O botão “Limpar tudo” permite apagar também o que estiver salvo.
 
 Administradores podem fornecer um perfil por política (`chrome.storage.managed`), somente leitura para a extensão.
 
