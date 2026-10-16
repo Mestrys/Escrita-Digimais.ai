@@ -9,7 +9,8 @@ import {
   FIELD_META, fieldHint, fieldLabel, FORMALITY_LABELS, LENGTH_LABELS, RECIPIENT_LABELS, TECH_LEVEL_LABELS, TYPE_FIELDS,
 } from '../config/fields';
 import { DEFAULT_PROFILE } from '../config/language-profile';
-import { exportProfileJson, parseProfileJson } from '../config/profile-schema';
+import { exportProfileJson } from '../config/profile-schema';
+import { importProfileText } from '../application/profile-signing';
 import { reviewText } from '../domain/review';
 import { scanText } from '../domain/sensitive';
 import { SUFFICIENCY_MATRIX } from '../domain/sufficiency';
@@ -19,7 +20,7 @@ import type {
 } from '../domain/types';
 import { copyText } from '../infrastructure/clipboard';
 import { AppStorage } from '../infrastructure/storage';
-import { loadAiPolicy } from '../infrastructure/policy';
+import { loadAiPolicy, loadSigningKeys } from '../infrastructure/policy';
 import { DiffView } from './components/DiffView';
 import { FieldControl } from './components/FieldControl';
 import type { Requirement } from './components/FieldControl';
@@ -30,6 +31,7 @@ import { SettingsPanel } from './components/SettingsPanel';
 export interface AppProps {
   storage?: AppStorage;
   loadPolicy?: () => Promise<AiPolicy>;
+  loadKeys?: () => Promise<string[]>;
   copy?: (text: string) => Promise<boolean>;
   providerFactory?: (policy: AiPolicy) => TextGenerationProvider;
   now?: () => Date;
@@ -54,13 +56,14 @@ const BLOCK_TITLES: Record<NonNullable<GenerationResult['blockReason']>, string>
   input_too_long: 'Geração bloqueada: conteúdo grande demais.',
 };
 
-export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, providerFactory = createProvider, now }: AppProps) {
+export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigningKeys, copy = copyText, providerFactory = createProvider, now }: AppProps) {
   const store = useMemo(() => storage ?? new AppStorage(), [storage]);
   const [form, setForm] = useState<FormState>(initialForm);
   const [profile, setProfile] = useState<LanguageProfile>(DEFAULT_PROFILE);
   const [profileSource, setProfileSource] = useState<'managed' | 'imported' | 'default'>('default');
   const [prefs, setPrefs] = useState<Preferences>(DEFAULT_PREFERENCES);
   const [policy, setPolicy] = useState<AiPolicy>(DISABLED_AI_POLICY);
+  const [signingKeys, setSigningKeys] = useState<string[]>([]);
   const [result, setResult] = useState<GenerationResult | null>(null);
   const [text, setText] = useState('');
   const [initialText, setInitialText] = useState('');
@@ -80,18 +83,20 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
   useEffect(() => {
     let alive = true;
     void (async () => {
-      const [p, loaded, pol] = await Promise.all([store.loadPreferences(), store.loadProfile(), loadPolicy()]);
+      const keys = await loadKeys();
+      const [p, loaded, pol] = await Promise.all([store.loadPreferences(), store.loadProfile(keys), loadPolicy()]);
       if (!alive) return;
       setPrefs(p);
       setProfile(loaded.profile);
       setProfileSource(loaded.source);
       setPolicy(pol);
+      setSigningKeys(keys);
       setForm((f) => ({ ...f, techLevel: p.techLevel, formality: p.formality, length: p.length }));
     })();
     return () => {
       alive = false;
     };
-  }, [store, loadPolicy]);
+  }, [store, loadPolicy, loadKeys]);
 
   const touch = useCallback(() => setActivity((n) => n + 1), []);
 
@@ -264,9 +269,9 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
   };
 
   const onImport = async (json: string): Promise<string[]> => {
-    const parsed = parseProfileJson(json);
+    const parsed = await importProfileText(json, signingKeys);
     if (!parsed.ok) return parsed.errors;
-    await store.saveProfile(parsed.profile);
+    await store.saveProfile(parsed.profile, parsed.signature);
     setProfile(parsed.profile);
     setProfileSource('imported');
     return [];
@@ -284,7 +289,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
 
   const onResetProfile = async (): Promise<void> => {
     await store.clearAll();
-    const loaded = await store.loadProfile();
+    const loaded = await store.loadProfile(signingKeys);
     setProfile(loaded.profile);
     setProfileSource(loaded.source);
     await store.savePreferences(prefs);
@@ -391,6 +396,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
             onImport={onImport}
             onExport={onExport}
             onResetProfile={() => void onResetProfile()}
+            signingRequired={signingKeys.length > 0}
           />
         )}
 

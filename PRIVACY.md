@@ -17,7 +17,7 @@ O processamento é local e determinístico. Os dados sensíveis detectados são 
 ## O que é armazenado
 Somente em `chrome.storage.local`, neste navegador:
 - **Preferências**: nível técnico, formalidade, tamanho padrão e tempo de limpeza automática.
-- **Perfil de linguagem importado** (opcional): textos institucionais validados, sem dados de chamados.
+- **Perfil de linguagem importado** (opcional): textos institucionais validados, sem dados de chamados. Quando a organização exige assinatura, guarda também o valor da assinatura (texto, sem dados pessoais).
 
 Nenhum conteúdo de chamado, texto gerado, histórico ou dado pessoal é armazenado. O botão “Limpar tudo” permite apagar também o que estiver salvo.
 

@@ -7,6 +7,7 @@
 | Credenciais coladas em chamados | Detecção local bloqueia a geração e a cópia; o valor nunca é exibido nem retornado em alertas |
 | Exposição de dados pessoais ou de infraestrutura | Detecção conservadora com mascaramento visível na prévia e remoção assistida com “Desfazer” |
 | Persistência indevida de dados | Allowlist de chaves em `chrome.storage.local`; conteúdo vive só em memória; limpeza por inatividade e “Limpar tudo” |
+| Perfil institucional trocado por um adulterado (arquivo ou disco local) | Com `profileSigningPublicKeys` na política: só importa envelope assinado (ECDSA P-256, WebCrypto local), falha fechada sem assinatura válida e reverifica o perfil guardado a cada abertura; a chave privada fica fora da extensão e do repositório |
 | Perfil importado malicioso (XSS, links de phishing, ReDoS, poluição de protótipo) | Validação estrita: só texto simples, sem HTML, URLs ou esquemas; chaves desconhecidas recusadas; termos escapados, nunca usados como regex; limite de 100 KB; React sem `innerHTML` |
 | Código remoto ou injetado | CSP `script-src 'self'`, sem CDN, sem `eval`/`new Function`, sem scripts inline; build com Vite sem polyfill inline |
 | Abuso de permissões | Somente `sidePanel` e `storage` |
