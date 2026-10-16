@@ -1,3 +1,4 @@
+/* global document, chrome -- usados dentro de page.evaluate, que roda no navegador */
 // Executa o roteiro da demonstração (docs/DEMONSTRACAO.md) em Chromium real, com a extensão carregada, e salva imagens.
 // Serve para ensaiar a apresentação e para ter imagens de reserva. Dados fictícios. Não roda no CI.
 // Uso: node scripts/demo-capture.mjs <pasta-da-extensao-descompactada> [pasta-de-saida]
