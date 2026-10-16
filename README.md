@@ -93,6 +93,10 @@ A interface segue o Material Design 3: papéis de cor tonais (tema claro e escur
 - `src/tests/contrast.test.ts` confere o contraste WCAG AA de todos os pares de cor usados, nos dois temas.
 - Avisos de terceiros em `THIRD-PARTY-NOTICES.md`; a licença da fonte também vai dentro do pacote (`licenses/`).
 
+## Entrega e demonstração
+- Estado do projeto, limitações e pendências com dono: [docs/ENTREGA.md](docs/ENTREGA.md).
+- Roteiro de demonstração de 7 minutos, ensaiado em navegador real: [docs/DEMONSTRACAO.md](docs/DEMONSTRACAO.md) (`node scripts/demo-capture.mjs <pasta-da-extensao> demo` gera as imagens de reserva).
+
 ## Validação, piloto e governança
 - Roteiro de instalação, formato e piloto: [docs/VALIDACAO-PILOTO.md](docs/VALIDACAO-PILOTO.md); amostras: [docs/AMOSTRAS-FORMATO.md](docs/AMOSTRAS-FORMATO.md); modelo de feedback: [docs/FEEDBACK-PILOTO.md](docs/FEEDBACK-PILOTO.md).
 - Análise dos contadores exportados: `node scripts/analyze-usage.mjs arquivo1.json arquivo2.json`.
