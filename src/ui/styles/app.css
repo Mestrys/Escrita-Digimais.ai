@@ -1,5 +1,10 @@
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; }
+/* Reflow a 320 px e espaçamento de texto do usuário (WCAG 1.4.10 e 1.4.12): nada força rolagem horizontal. */
+body { overflow-wrap: anywhere; }
+fieldset { min-width: 0; }
+input[type='file'] { max-width: 100%; }
+.field, .row > * { min-width: 0; }
 body {
   background: var(--color-bg);
   color: var(--color-text);
