@@ -187,7 +187,7 @@ describe('correções da revisão de segurança e de código', () => {
     typeIn(/^Perguntas ao destinatário/, 'Qual erro aparece na tela');
     await user.click(screen.getByRole('button', { name: 'Gerar prévia' }));
     await screen.findByLabelText('Prévia editável');
-    await user.click(screen.getByRole('button', { name: 'Limpar', exact: true }));
+    await user.click(screen.getByRole('button', { name: /^Limpar$/ }));
     expect(screen.getByRole('button', { name: 'Desfazer limpeza' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Limpar tudo' }));
     await user.click(screen.getByLabelText(/Apagar também preferências/));
@@ -221,7 +221,7 @@ describe('correções da revisão de segurança e de código', () => {
     typeIn(/^Perguntas ao destinatário/, 'Pergunta do modo de geração');
     await openReview(user);
     typeIn('Texto a revisar', 'Texto em revisão.');
-    await user.click(screen.getByRole('button', { name: 'Limpar', exact: true }));
+    await user.click(screen.getByRole('button', { name: /^Limpar$/ }));
     expect((screen.getByLabelText('Texto a revisar') as HTMLTextAreaElement).value).toBe('');
     await user.click(screen.getByRole('button', { name: 'Gerar texto' }));
     expect((screen.getByLabelText(/^Perguntas ao destinatário/) as HTMLTextAreaElement).value).toBe('Pergunta do modo de geração');
