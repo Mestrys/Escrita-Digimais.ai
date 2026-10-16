@@ -14,6 +14,7 @@
   --md-sys-color-on-primary-container: #001b3c;
   --md-sys-color-secondary-container: #d9e3f8;
   --md-sys-color-error: #ba1a1a;
+  --md-sys-color-on-error: #ffffff;
   --md-sys-color-error-container: #ffdad6;
   --md-sys-color-on-error-container: #410002;
   --md-sys-color-warning-container: #ffdbc8;
@@ -56,6 +57,7 @@
     --md-sys-color-on-primary-container: #d5e3ff;
     --md-sys-color-secondary-container: #3d4758;
     --md-sys-color-error: #ffb4ab;
+    --md-sys-color-on-error: #690005;
     --md-sys-color-error-container: #93000a;
     --md-sys-color-on-error-container: #ffb4ab;
     --md-sys-color-warning-container: #743500;

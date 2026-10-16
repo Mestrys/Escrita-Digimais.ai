@@ -38,6 +38,16 @@ describe('sistema de design (Material Design 3, Google Sans Flex)', () => {
     expect(readFileSync(join(dir, 'tokens.css'), 'utf8')).toMatch(/@media \(prefers-contrast: more\)/);
   });
 
+  it('a ação destrutiva em contêiner colorido tem estilo próprio e não herda a cor do contêiner', () => {
+    expect(app).toMatch(/\.panel\.warn button:not\(\.danger\)/);
+    expect(app).toMatch(/\.panel button\.danger\s*\{[^}]*background:\s*var\(--md-sys-color-error\)/);
+  });
+
+  it('alvos pequenos foram ampliados (caixa de seleção e resumo)', () => {
+    expect(app).toMatch(/input\[type='checkbox'\]\s*\{[^}]*width:\s*1\.25rem/);
+    expect(app).toMatch(/summary\s*\{[^}]*padding:\s*0\.5rem 0/);
+  });
+
   it('o foco por teclado continua visível e o clique tem resposta imediata', () => {
     expect(app).toMatch(/:focus-visible\s*\{\s*outline:\s*3px solid/);
     expect(app).toMatch(/button:active::after\s*\{[^}]*transition:\s*none/);

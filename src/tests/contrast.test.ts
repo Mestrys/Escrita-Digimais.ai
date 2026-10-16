@@ -26,7 +26,7 @@ function ratio(a: string, b: string): number {
 const TEXT_PAIRS: [string, string][] = [
   ['on-surface', 'surface'], ['on-surface', 'surface-container-high'], ['on-surface', 'surface-container'],
   ['on-surface-variant', 'surface'], ['on-surface-variant', 'surface-container'], ['on-surface-variant', 'surface-container-high'],
-  ['on-primary', 'primary'], ['primary', 'surface'], ['error', 'surface'], ['error', 'surface-container-high'],
+  ['on-primary', 'primary'], ['on-error', 'error'], ['primary', 'surface'], ['error', 'surface'], ['error', 'surface-container-high'],
   ['on-error-container', 'error-container'], ['on-warning-container', 'warning-container'],
   ['on-success-container', 'success-container'], ['on-primary-container', 'primary-container'],
 ];
