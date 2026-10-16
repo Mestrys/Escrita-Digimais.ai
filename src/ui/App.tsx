@@ -2,11 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { emptyContent, initialForm, TEXT_FORM_FIELDS, toGenerationInput } from '../application/form';
 import type { FormState, TextFormField } from '../application/form';
 import { DEFAULT_PREFERENCES } from '../application/preferences';
-import { acceptedEvents, draftBias, emptyStats, preferredIndexes, rejectedEvents, StyleLearner } from '../application/style-learning';
-import type { LearnedStats } from '../application/style-learning';
-import {
-  effectiveUsageMode, exportCounters, generationKeys, timeBucket, UsageRecorder,
-} from '../application/usage-counters';
+import { acceptedEvents, draftBias, preferredIndexes, rejectedEvents } from '../application/style-learning';
+import { generationKeys, timeBucket } from '../application/usage-counters';
 import type { UsagePolicy } from '../application/usage-counters';
 import type { Preferences } from '../application/preferences';
 import { hasReviewContent, initialReviewForm, reviewInputProblem, toReviewContext } from '../application/review-form';
@@ -31,7 +28,10 @@ import type {
 } from '../domain/types';
 import { copyText } from '../infrastructure/clipboard';
 import { AppStorage } from '../infrastructure/storage';
+import { extensionVersion } from '../infrastructure/extension';
 import { loadAiPolicy, loadSigningKeys, loadUsagePolicy } from '../infrastructure/policy';
+import { useStyleLearning } from './hooks/useStyleLearning';
+import { useUsageCounters } from './hooks/useUsageCounters';
 import { DiffView } from './components/DiffView';
 import { DraftPanel } from './components/DraftPanel';
 import type { DraftFields } from '../domain/draft';
@@ -98,8 +98,6 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
   const [policy, setPolicy] = useState<AiPolicy>(DISABLED_AI_POLICY);
   const [signingKeys, setSigningKeys] = useState<string[]>([]);
   const [usagePolicy, setUsagePolicy] = useState<UsagePolicy>('optional');
-  const [usageTotal, setUsageTotal] = useState(0);
-  const [learned, setLearned] = useState<LearnedStats>(emptyStats);
   const [draftKey, setDraftKey] = useState(0);
   const [result, setResult] = useState<GenerationResult | null>(null);
   const [text, setText] = useState('');
@@ -126,27 +124,10 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
   const confirmRef = useRef<HTMLElement>(null);
   const clearButtonRef = useRef<HTMLButtonElement>(null);
   const generatedAt = useRef(0);
-  const recorder = useMemo(
-    () => new UsageRecorder({ load: () => store.loadCounters(), save: (c) => store.saveCounters(c) }),
-    [store],
-  );
-  const usage = effectiveUsageMode(usagePolicy, prefs.usageCounters);
-  useEffect(() => recorder.setEnabled(usage.enabled), [recorder, usage.enabled]);
-  // Aprendizado de redação: opt-in do analista, desligado por política quando a organização proíbe contadores locais.
-  const learning = { enabled: prefs.learnStyle && usagePolicy !== 'off', locked: usagePolicy === 'off' };
-  const learner = useMemo(
-    () => new StyleLearner({ load: () => store.loadLearning(), save: (s) => store.saveLearning(s) }),
-    [store],
-  );
-  useEffect(() => learner.setEnabled(learning.enabled), [learner, learning.enabled]);
-  const shownChoices = useRef<GenerationResult['choices']>(undefined);
-  const acceptedAt = useRef(0);
-  const remember = useCallback(
-    (events: Parameters<StyleLearner['record']>[0]): void => {
-      void learner.record(events).then(() => learner.snapshot()).then(setLearned);
-    },
-    [learner],
-  );
+  const usageCounters = useUsageCounters(store, usagePolicy, prefs.usageCounters);
+  const { recorder, mode: usage } = usageCounters;
+  const learning = useStyleLearning(store, prefs.learnStyle, usagePolicy);
+  const { setStats: setLearnedStats } = learning;
 
   useEffect(() => {
     let alive = true;
@@ -163,13 +144,13 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
       setSigningKeys(keys);
       setOverlay(ov);
       setUsagePolicy(usagePol);
-      setLearned(await store.loadLearning());
+      setLearnedStats(await store.loadLearning());
       setForm((f) => ({ ...f, techLevel: p.techLevel, formality: p.formality, length: p.length, textStyle: p.textStyle }));
     })();
     return () => {
       alive = false;
     };
-  }, [store, loadPolicy, loadKeys, loadUsage]);
+  }, [store, loadPolicy, loadKeys, loadUsage, setLearnedStats]);
 
   // Ao abrir a confirmação, o foco vai para ela; ao fechar, volta ao botão que a abriu.
   useEffect(() => {
@@ -353,13 +334,12 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     setCopied('none');
     const provider = providerFactory(policy);
     const input = toGenerationInput(next);
-    if (learning.enabled) input.settings.learned = preferredIndexes(learned, next.type, next.formality);
+    if (learning.enabled) input.settings.learned = preferredIndexes(learning.stats, next.type, next.formality);
     const outcome = await generateWithFallback(provider, { input, profile, now: now?.() });
     const r = outcome.result;
-    if (isVariant && shownChoices.current && r.choices) {
-      remember(rejectedEvents(shownChoices.current, r.choices, next.type, next.formality));
-    }
-    shownChoices.current = r.choices;
+    const before = learning.previousShown();
+    if (isVariant && before && r.choices) learning.remember(rejectedEvents(before, r.choices, next.type, next.formality));
+    learning.setShown(r.choices);
     setResult(outcome.notice ? { ...r, warnings: [...r.warnings, outcome.notice] } : r);
     setText(r.text);
     setInitialText(r.text);
@@ -395,9 +375,9 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     const ok = await copy(text);
     setCopied(ok ? 'ok' : 'fail');
     if (ok) void recorder.record(['copy', `time_to_copy.${timeBucket(Date.now() - generatedAt.current)}`]);
-    if (ok && result?.choices && acceptedAt.current !== generatedAt.current) {
-      acceptedAt.current = generatedAt.current;
-      remember(acceptedEvents(result.choices, form.type, form.formality));
+    if (ok && result?.choices) {
+      const choices = result.choices;
+      learning.acceptOnce(generatedAt.current, () => acceptedEvents(choices, form.type, form.formality));
     }
     setLive(ok ? 'Texto copiado.' : 'Não foi possível copiar. Selecione o texto e copie manualmente.');
   };
@@ -497,21 +477,6 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     setLive('Camada da equipe removida.');
   };
 
-  const refreshUsageTotal = useCallback(async (): Promise<void> => {
-    const snap = await recorder.snapshot();
-    setUsageTotal(Object.values(snap.counts).reduce((a, b) => a + b, 0));
-  }, [recorder]);
-
-  const onExportUsage = async (): Promise<void> => {
-    const blob = new Blob([exportCounters(await recorder.snapshot())], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'contadores-de-uso.json';
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
   const applyDraft = (fields: DraftFields): void => {
     const keyOf: Record<keyof DraftFields, TextFormField> = {
       summary: 'summary', actions: 'actions', observedResult: 'observedResult', pendingItem: 'pendingItem',
@@ -533,16 +498,12 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
   };
 
   const onResetLearning = async (): Promise<void> => {
-    await learner.snapshot();
-    await store.resetLearning();
-    setLearned(emptyStats());
+    await learning.reset();
     setLive('Preferências de redação zeradas.');
   };
 
   const onResetUsage = async (): Promise<void> => {
-    await recorder.snapshot();
-    await store.resetCounters();
-    setUsageTotal(0);
+    await usageCounters.reset();
     setLive('Contadores de uso zerados.');
   };
 
@@ -609,7 +570,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
       <header className="app-header">
         <h1>Assistente de Textos do Service Desk</h1>
         <div className="row">
-          <button type="button" onClick={() => { if (!showSettings) void refreshUsageTotal(); setShowSettings((s) => !s); }} aria-expanded={showSettings}>
+          <button type="button" onClick={() => { if (!showSettings) void usageCounters.refreshTotal(); setShowSettings((s) => !s); }} aria-expanded={showSettings}>
             Configurações
           </button>
           <button type="button" className="danger" ref={clearButtonRef} onClick={() => setConfirmClear(true)}>
@@ -688,10 +649,12 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
             overlay={overlay}
             onImportOverlay={onImportOverlay}
             onRemoveOverlay={() => void onRemoveOverlay()}
-            usage={{ ...usage, policy: usagePolicy, total: usageTotal }}
-            learn={{ ...learning, total: Object.values(learned.counts).reduce((a, b) => a + b, 0) }}
+            usage={{ ...usage, policy: usagePolicy, total: usageCounters.total }}
+            learn={{ enabled: learning.enabled, locked: learning.locked, total: learning.total }}
+            version={extensionVersion()}
             onResetLearning={() => void onResetLearning()}
-            onExportUsage={() => void onExportUsage()}
+            onExportLearning={() => void learning.exportFile()}
+            onExportUsage={() => void usageCounters.exportFile()}
             onResetUsage={() => void onResetUsage()}
           />
         )}
@@ -739,10 +702,11 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
             key={draftKey}
             available={new Set<ContextField>([...fields.main, ...fields.advanced])}
             internalDomains={profile.internalDomains}
-            bias={learning.enabled ? draftBias(learned) : {}}
+            bias={learning.enabled ? draftBias(learning.stats) : {}}
             onApply={applyDraft}
             onEvent={(e) => void recorder.record(e)}
-            onFixes={(fixes) => { void learner.recordFixes(fixes).then(() => learner.snapshot()).then(setLearned); }}
+            onAnnounce={setLive}
+            onFixes={learning.rememberFixes}
           />
           {fields.main.map(renderField)}
           <details>

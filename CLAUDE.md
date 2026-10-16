@@ -8,6 +8,8 @@ Extensão MV3 para Microsoft Edge que gera sugestões de texto para chamados de 
 - `src/application`: casos de uso (provedor local, adaptador remoto desativado, mapeamento do formulário, preferências).
 - `src/infrastructure`: chrome.storage, clipboard, sidePanel, service worker, política gerenciada.
 - `src/ui`: React (painel lateral e popup). Só orquestra; regra de negócio fica no domínio.
+  - `src/ui/hooks`: estado e efeitos reutilizáveis (`useUsageCounters`, `useStyleLearning`). `App.tsx` só compõe.
+- Listas fechadas da voz (verbos, particípios, substantivos) ficam em `src/config/voice-lists.ts`; a lógica, em `src/domain/voice.ts`.
 
 - Rascunho livre (`domain/draft.ts`, regras em `config/draft-rules.ts`, modelo em `config/draft-model.json`): só sugere campos; o analista confere antes de preencher; o texto colado nunca é persistido. O modelo é regenerado do corpus fictício com `UPDATE_MODEL=1 npx vitest run src/tests/draft-model.test.ts`. Mudou regra ou corpus? Rode a medida em `src/tests/draft.test.ts` e atualize `docs/AVALIACAO-RASCUNHO.md`.
 

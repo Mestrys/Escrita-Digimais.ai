@@ -183,6 +183,19 @@ export function rejectedEvents(before: PhraseChoices, after: PhraseChoices, type
   return events;
 }
 
+/** Arquivo exportado pelo analista para o piloto: só as contagens, sem texto. O nome do arquivo começa com "aprendizado". */
+export function exportLearning(stats: LearnedStats, now: Date = new Date()): string {
+  return JSON.stringify(
+    {
+      nota: 'Contagens de preferência de redação e de correções do rascunho livre. Sem conteúdo de chamado. Gerado localmente pela extensão.',
+      exportadoEm: now.toISOString().slice(0, 10),
+      contadores: stats.counts,
+    },
+    null,
+    2,
+  );
+}
+
 interface StatsIo {
   load(): Promise<LearnedStats>;
   save(stats: LearnedStats): Promise<void>;
