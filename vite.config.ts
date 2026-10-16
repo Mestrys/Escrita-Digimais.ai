@@ -46,6 +46,8 @@ export default defineConfig(({ mode }) => {
       sourcemap: dev,
       minify: !dev,
       modulePreload: { polyfill: false },
+      // Sem data: URIs (a CSP não permite data: em font-src/img-src): toda fonte e imagem vira arquivo em assets/.
+      assetsInlineLimit: 0,
       rollupOptions: {
         input: {
           sidepanel: fromRoot('./sidepanel.html'),
