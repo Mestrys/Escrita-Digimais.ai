@@ -50,6 +50,8 @@ Para cada cenário, anote o que o leitor falou, compare com o esperado e registr
 | R13 | Somente teclado | Percorrer toda a interface sem mouse. | Ordem de foco lógica, foco sempre visível, nenhuma armadilha de foco. |
 | R14 | Zoom e texto | Ampliar o navegador a 400% (equivale a 320 px) e aumentar a fonte para 200%. | Tudo continua utilizável sem rolagem horizontal. |
 | R15 | Aparência do sistema | Ativar o Alto Contraste do Windows. Se o tema escuro estiver disponível na versão instalada, ativá-lo também. | Bordas, botões e foco continuam visíveis e legíveis. |
+| R16 | Revisar texto pronto | Ativar "Revisar texto pronto" (botão de modo, anunciado como pressionado). Colar um texto de teste e ativar "Revisar agora". | Os dois botões de modo informam qual está pressionado. O campo "Texto a revisar" tem contador. O resultado é uma região "Resultado da revisão" com a lista de alertas. Texto vazio gera mensagem de erro anunciada. |
+| R17 | Desfazer limpeza | Gerar uma prévia, ativar "Limpar" e depois "Desfazer limpeza". | Anúncio de que o conteúdo foi limpo e pode ser desfeito por 30 segundos. O botão "Desfazer limpeza" é alcançável, e o conteúdo volta ao ser ativado. |
 
 ## Critério de aprovação
 
@@ -77,6 +79,8 @@ Para cada cenário, anote o que o leitor falou, compare com o esperado e registr
 | R13 | não executado | não executado | | | |
 | R14 | não executado | não executado | | | |
 | R15 | não executado | não executado | | | |
+| R16 | não executado | não executado | | | |
+| R17 | não executado | não executado | | | |
 
 ## Como registrar um problema
 
