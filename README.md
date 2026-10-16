@@ -76,7 +76,7 @@ O workflow `.github/workflows/ci.yml` roda a cada pull request e a cada push no 
 Requer Edge 116 ou superior (API `chrome.sidePanel.open`).
 
 ## Qualidade da detecção
-A detecção de dados sensíveis é medida contra um corpus sintético de 107 casos e protegida no CI por pisos de qualidade, com tolerância zero para segredos bloqueantes que escapem. Resultados, falhas conhecidas e limites em [docs/AVALIACAO.md](docs/AVALIACAO.md).
+A detecção de dados sensíveis é medida contra um corpus sintético de 112 casos e protegida no CI por pisos de qualidade, com tolerância zero para segredos bloqueantes que escapem. Resultados, falhas conhecidas e limites em [docs/AVALIACAO.md](docs/AVALIACAO.md).
 
 ## Uso
 1. Escolha o tipo de comunicação e o destinatário (o destinatário aplica nível técnico e formalidade sugeridos, até você alterar manualmente).

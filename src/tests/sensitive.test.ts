@@ -110,6 +110,25 @@ describe('credenciais em formato de variável de ambiente', () => {
     expect(found.map((f) => f.category)).not.toContain('hostname');
   });
 
+  it('nomes de servidor seguidos de dois-pontos ou igual continuam detectados', () => {
+    for (const text of [
+      'O servidor srv-fin01: está fora do ar',
+      'Erro em fs-01.corp.local: acesso negado',
+      'dc01.corp.local:445 recusou a conexão',
+      'fileserver.corp.local:8080 sem resposta',
+      'ws-0042 = reiniciado',
+      'nb-ana-silva: lenta',
+    ]) {
+      expect(scanText(text).map((f) => f.category), text).toContain('hostname');
+    }
+  });
+
+  it('nome de variável de ambiente em maiúsculas nunca é tratado como servidor', () => {
+    for (const text of ['DB_PASSWORD=Sup3rS3cret!', 'A variável DB_PASSWORD está definida no servidor.', 'APP_SECRET_KEY: definido']) {
+      expect(scanText(text).map((f) => f.category), text).not.toContain('hostname');
+    }
+  });
+
   it('não confunde menção ao nome da variável com atribuição', () => {
     expect(scanText('A variável DB_PASSWORD está definida no servidor.').some((f) => f.blocking)).toBe(false);
     expect(scanText('O token_expirado foi tratado.').some((f) => f.blocking)).toBe(false);

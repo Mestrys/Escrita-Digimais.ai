@@ -4,7 +4,7 @@ A detecção de dados sensíveis é heurística e pode errar. Este documento mos
 
 ## Como funciona
 
-- Corpus: `src/tests/eval/sensitive-corpus.ts`, com 107 casos 100% sintéticos (CPFs, CNPJs e cartões de teste, domínio reservado `.test`). Há casos positivos (um ou mais dados esperados), negativos comuns e negativos difíceis (textos que parecem dado sensível mas não são).
+- Corpus: `src/tests/eval/sensitive-corpus.ts`, com 112 casos 100% sintéticos (CPFs, CNPJs e cartões de teste, domínio reservado `.test`). Há casos positivos (um ou mais dados esperados), negativos comuns e negativos difíceis (textos que parecem dado sensível mas não são).
 - Avaliador: `src/tests/eval/run-eval.ts` compara, por caso, o conjunto de categorias esperado com o detectado.
 - Teste: `src/tests/eval/sensitive-eval.test.ts`, executado em `npm test` e no CI.
 
@@ -35,11 +35,11 @@ A detecção de dados sensíveis é heurística e pode errar. Este documento mos
 | Telefone | 3 | 0 | 0 | 100% | 100% |
 | Endereço | 3 | 0 | 0 | 100% | 100% |
 | IP | 3 | 1 | 0 | 75% | 100% |
-| Servidor interno | 2 | 0 | 0 | 100% | 100% |
+| Servidor interno | 6 | 0 | 0 | 100% | 100% |
 | URL interna | 2 | 0 | 0 | 100% | 100% |
 | Caminho interno | 3 | 0 | 0 | 100% | 100% |
 | Bloco de log | 1 | 0 | 0 | 100% | 100% |
-| **Global** | **59** | **4** | **0** | **93,7%** | **100%** |
+| **Global** | **63** | **4** | **0** | **94,0%** | **100%** |
 
 ## Falhas conhecidas (aceitas por desenho)
 
@@ -51,6 +51,10 @@ Esses casos ficam marcados com `gap` no corpus e continuam contando nas métrica
 ## Achado desta avaliação
 
 A primeira medição encontrou perdas reais: credenciais em formato de variável de ambiente (`DB_PASSWORD=...`, `SECRET_KEY=...`, `AWS_SECRET_ACCESS_KEY=...`, `API_TOKEN=...`) não eram bloqueadas, e `DB_PASSWORD` era classificado como nome de servidor. Os detectores foram ajustados (com repetição limitada para não piorar o tempo de execução) e os casos viraram teste de regressão.
+
+## Regressão corrigida pela revisão
+
+A primeira correção das variáveis de ambiente fazia o detector de servidor ignorar qualquer nome seguido de `:` ou `=`. Linhas de erro como `srv-fin01: sem resposta` ou `fs-01.corp.local: acesso negado` deixaram de ser mascaradas. A exclusão agora vale só para nomes em maiúsculas com sublinhado (`DB_PASSWORD`), e os casos `host-03` a `host-06` do corpus travam o comportamento.
 
 ## Limites desta avaliação
 

@@ -260,8 +260,9 @@ const DETECTORS: Detector[] = [
     blocking: false,
     pattern:
       /\b[a-z][a-z0-9-]*(?:\.[a-z0-9-]+)*\.(?:local|corp|internal|lan|intra|intranet|localdomain|home)\b|\b(?:srv|svr|dc|fs|sql|db|app|web|vm|ws|nb)[-_][a-z0-9][a-z0-9-]{1,}\b|\b(?:srv|svr|dc|fs|sql)\d{2,}\b/giu,
-    // "DB_PASSWORD=..." é nome de variável de ambiente, não servidor.
-    validate: (m) => !/^\s*[:=]/u.test((m.input ?? '').slice((m.index ?? 0) + m[0].length)),
+    // "DB_PASSWORD" é nome de variável de ambiente (tudo em maiúsculas, com sublinhado), não servidor.
+    // Nomes de servidor seguidos de ":" ou "=" (por exemplo "srv-fin01: sem resposta") continuam detectados.
+    validate: (m) => !/^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+$/u.test(m[0]),
     reason: 'Nome com padrão de servidor ou domínio interno.',
     action: INFRA_ACTION,
     placeholder: '[nome de servidor omitido]',

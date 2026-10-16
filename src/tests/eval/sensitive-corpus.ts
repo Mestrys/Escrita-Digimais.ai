@@ -130,6 +130,12 @@ export const CORPUS: EvalCase[] = [
   h('ip-neg-02', 'Compilação 10.0.19045.3693 do Windows.'),
   p('host-01', 'Acessar srv-arquivos01.corp.exemplo.test', 'hostname'),
   p('host-02', 'falha em dc01.exemplo.test', 'hostname'),
+  // Nome de servidor seguido de ":" ou "=" é a forma comum de escrever uma linha de erro: precisa continuar detectado.
+  p('host-03', 'O servidor srv-fin01: está fora do ar', 'hostname'),
+  p('host-04', 'Erro em fs-01.corp.local: acesso negado', 'hostname'),
+  p('host-05', 'dc01.corp.local:445 recusou a conexão', 'hostname'),
+  p('host-06', 'ws-0042 = reiniciado', 'hostname'),
+  h('host-neg-01', 'A variável DB_PASSWORD está definida no servidor.'),
   p('url-01', 'Acesse https://intranet.corp.exemplo.test/chamados/123', 'url'),
   p('url-02', 'portal em http://wiki.exemplo.test/ti', 'url'),
   h('url-neg-01', 'Consulte a documentação oficial do fabricante.'),
