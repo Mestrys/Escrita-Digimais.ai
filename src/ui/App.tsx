@@ -703,6 +703,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
             bias={learning.enabled ? draftBias(learning.stats) : {}}
             onApply={applyDraft}
             onEvent={(e) => void recorder.record(e)}
+            onAnnounce={setLive}
             onFixes={learning.rememberFixes}
           />
           {fields.main.map(renderField)}

@@ -80,6 +80,7 @@ describe('aprendizado de redação na interface', () => {
     await user.click(screen.getByRole('button', { name: /Configurações/ }));
     expect(screen.getByText(/Desligado pela política da organização/)).toBeTruthy();
     expect(screen.queryByLabelText('Aprender com as redações que eu mantenho')).toBeNull();
+    expect((screen.getByRole('button', { name: 'Exportar aprendizado' }) as HTMLButtonElement).disabled).toBe(true);
   });
 
   it('zerar aprendizado remove os dados', async () => {

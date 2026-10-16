@@ -1,6 +1,6 @@
 /* global document, chrome -- usados dentro de page.evaluate, que roda no navegador */
 // Executa o roteiro da demonstração (docs/DEMONSTRACAO.md) em Chromium real, com a extensão carregada, e salva imagens.
-// Serve para ensaiar a apresentação e para ter imagens de reserva. Dados fictícios. Não roda no CI.
+// Serve para ensaiar a apresentação e para ter imagens de reserva. Dados fictícios. Roda também no CI (job e2e), contra o zip extraído.
 // Uso: node scripts/demo-capture.mjs <pasta-da-extensao-descompactada> [pasta-de-saida]
 // Requer o Playwright (PLAYWRIGHT_MODULE pode apontar para o módulo).
 import { mkdirSync } from 'node:fs';

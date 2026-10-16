@@ -51,6 +51,8 @@ input[type='text']:focus, input[type='date']:focus, select:focus, textarea:focus
 input[type='file'] { font: inherit; max-width: 100%; }
 /* Caixa de seleção de 20 px (a nativa tem 13 px) na cor de destaque do tema. */
 input[type='checkbox'] { width: 1.25rem; height: 1.25rem; margin: 0; flex: none; accent-color: var(--md-sys-color-primary); }
+/* O rótulo da caixa de seleção também é área de toque: pelo menos 40 px de altura. */
+input[type='checkbox'] + label { display: inline-flex; align-items: center; min-height: 2.5rem; }
 textarea { resize: vertical; min-height: 3.5rem; }
 input[aria-invalid='true'], select[aria-invalid='true'], textarea[aria-invalid='true'],
 input[aria-invalid='true']:hover, select[aria-invalid='true']:hover, textarea[aria-invalid='true']:hover,
@@ -97,6 +99,8 @@ button:disabled::after { display: none; }
 .panel.block .error-text, .panel.warn .error-text { color: inherit; }
 /* Botões dentro de contêineres coloridos herdam o par on-container (contorno >= 3:1 também no tema escuro). */
 .panel.block button:not(.danger), .panel.warn button:not(.danger), .panel.info button:not(.danger), .panel.ok button:not(.danger) { color: inherit; border-color: currentColor; }
+/* A ação principal dentro de um contêiner colorido mantém o par on-primary/primary (a regra acima a deixaria ilegível). */
+.panel.block button.primary, .panel.warn button.primary, .panel.info button.primary, .panel.ok button.primary { background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); border-color: transparent; }
 /* A ação destrutiva dentro de um contêiner colorido é preenchida com a cor de erro, para não ser confundida com Cancelar. */
 .panel button.danger { background: var(--md-sys-color-error); color: var(--md-sys-color-on-error); border-color: transparent; }
 .panel button.danger:disabled { background: color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent); }

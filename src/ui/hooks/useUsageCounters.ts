@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { effectiveUsageMode, exportCounters, UsageRecorder } from '../../application/usage-counters';
 import type { UsagePolicy } from '../../application/usage-counters';
 import type { AppStorage } from '../../infrastructure/storage';
+import { downloadJson } from '../download';
 
 /**
  * Contadores de uso opcionais (só números, sem conteúdo): gravação serializada, total mostrado nas configurações,
@@ -22,13 +23,7 @@ export function useUsageCounters(store: AppStorage, policy: UsagePolicy, userOpt
   }, [recorder]);
 
   const exportFile = useCallback(async (): Promise<void> => {
-    const blob = new Blob([exportCounters(await recorder.snapshot())], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'contadores-de-uso.json';
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadJson('contadores-de-uso.json', exportCounters(await recorder.snapshot()));
   }, [recorder]);
 
   const reset = useCallback(async (): Promise<void> => {

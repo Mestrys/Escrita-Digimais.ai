@@ -5,7 +5,20 @@
 import { readFileSync } from 'node:fs';
 
 const KEY = /^(?:(?:generate|blocked|alert)\.[a-z][a-z0-9_]{1,47}|time_to_copy\.(?:lt1m|1to3m|3to10m|gt10m)|copy|variant|review_again|draft_split|draft_apply)$/;
-const LEARN_KEY = /^(?:(?:acc|rej)\.(?:opening|closing|courtesy|lead)\.[a-z_]+\.\d|fix\.[a-z]+\.[a-z]+)$/;
+// Chaves de aprendizado exatamente como a extensão aceita (src/application/style-learning.ts): ponto, escopo e índice
+// combinam entre si, e uma correção nunca vai de um campo para ele mesmo.
+const TYPES = 'request_information|technical_note|pending|manager_approval|progress_update|solution_confirmation|closure_resolved|closure_no_response|redirect_or_escalate|guided_free_text';
+const CLASSES = ['summary', 'action', 'result', 'pending', 'expected', 'question'];
+const LEARN_PATTERNS = [
+  new RegExp(`^(?:acc|rej)\\.(?:opening|closing)\\.(?:${TYPES})\\.\\d$`),
+  /^(?:acc|rej)\.courtesy\.(?:cordial|formal|direct)\.\d$/,
+  /^(?:acc|rej)\.lead\.any\.\d$/,
+];
+export function isLearnKey(key) {
+  if (LEARN_PATTERNS.some((re) => re.test(key))) return true;
+  const m = /^fix\.([a-z]+)\.([a-z]+)$/.exec(key);
+  return Boolean(m) && CLASSES.includes(m[1]) && [...CLASSES, 'ignore'].includes(m[2]) && m[1] !== m[2];
+}
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const MS_DAY = 86_400_000;
 
@@ -37,7 +50,12 @@ export function personSummary(name, raw, opts) {
   };
 }
 
-const isLearning = (p) => p.name.startsWith('aprendizado');
+/** Arquivo de aprendizado: pelo nome ("aprendizado...") ou pelo formato (só chaves de aprendizado), para resistir a renomeações. */
+const isLearning = (p) => {
+  if (p.name.toLowerCase().startsWith('aprendizado')) return true;
+  const keys = p.raw && typeof p.raw === 'object' && p.raw.contadores && typeof p.raw.contadores === 'object' ? Object.keys(p.raw.contadores) : [];
+  return keys.length > 0 && keys.every(isLearnKey);
+};
 
 /** Soma as contagens de aprendizado (redações mantidas ou trocadas e correções do rascunho livre). */
 function learningTotals(files) {
@@ -46,7 +64,7 @@ function learningTotals(files) {
   for (const f of files) {
     const source = f.raw && typeof f.raw === 'object' && f.raw.contadores && typeof f.raw.contadores === 'object' ? f.raw.contadores : {};
     for (const [k, v] of Object.entries(source)) {
-      if (LEARN_KEY.test(k) && Number.isInteger(v) && v >= 1 && v <= 1_000_000_000) total[k] = (total[k] ?? 0) + v;
+      if (isLearnKey(k) && Number.isInteger(v) && v >= 1 && v <= 1_000_000_000) total[k] = (total[k] ?? 0) + v;
       else ignored += 1;
     }
   }
@@ -101,6 +119,9 @@ export function analyze(allPeople, opts = { minGenerations: 30, minDays: 14 }) {
     lines.push('', '## Rascunho livre e aprendizado', '');
     lines.push(`Arquivos de aprendizado: ${learningFiles.length}.`);
     lines.push(`- Correções do analista na divisão do rascunho: ${fixTotal}${applied > 0 ? ` (${(fixTotal / applied).toFixed(1)} por formulário preenchido)` : ''}.`);
+    if (learningFiles.length !== people.length) {
+      lines.push(`- Atenção: ${learningFiles.length} arquivo(s) de aprendizado para ${people.length} de uso. A razão acima mistura grupos diferentes e é só uma aproximação.`);
+    }
     if (fixes.length > 0) {
       lines.push('', '| De | Para | Total |', '|---|---|---|');
       for (const [k, v] of fixes.slice(0, 8)) {

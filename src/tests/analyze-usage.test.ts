@@ -98,4 +98,14 @@ describe('análise do piloto', () => {
     expect(out).toContain('Menos da metade das divisões do rascunho livre');
     expect(out).toContain('Arquivos: 1.'); // o arquivo de aprendizado não conta como pessoa
   });
+
+  it('reconhece o arquivo de aprendizado pelo formato mesmo renomeado, e recusa chaves que a extensão não aceita', () => {
+    const base = person(40, 0, '2026-09-01', '2026-10-20', { draft_split: 20, draft_apply: 15 });
+    const learn = { contadores: { 'fix.result.action': 3, 'fix.foo.bar': 5, 'fix.result.result': 2, 'acc.opening.formal.1': 4 } };
+    const out = run(file('h.json', base), file('minhas-preferencias.json', { contadores: { 'fix.summary.action': 2 } }), file('aprendizado-h.json', learn));
+    expect(out).toContain('Arquivos: 1.');
+    expect(out).toContain('Correções do analista na divisão do rascunho: 5');
+    expect(out).toContain('Chaves ignoradas por não pertencerem à lista fechada: 3.');
+    expect(out).toContain('2 arquivo(s) de aprendizado para 1 de uso');
+  });
 });

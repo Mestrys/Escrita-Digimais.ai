@@ -170,7 +170,7 @@ export function SettingsPanel({
         )}
         <p className="subtle">Observações registradas: {learn.total}</p>
         <div className="row">
-          <button type="button" onClick={onExportLearning}>Exportar aprendizado</button>
+          <button type="button" onClick={onExportLearning} disabled={learn.locked}>Exportar aprendizado</button>
           <button type="button" onClick={onResetLearning}>Zerar aprendizado</button>
         </div>
       </fieldset>

@@ -4,6 +4,7 @@ import type { LearnedStats } from '../../application/style-learning';
 import type { UsagePolicy } from '../../application/usage-counters';
 import type { AppStorage } from '../../infrastructure/storage';
 import type { GenerationResult } from '../../domain/types';
+import { downloadJson } from '../download';
 
 /**
  * Aprendizado local de preferência de redação (só contagens inteiras, opt-in, zerável). Desligado quando a política
@@ -57,13 +58,7 @@ export function useStyleLearning(store: AppStorage, userOptIn: boolean, usagePol
   );
 
   const exportFile = useCallback(async (): Promise<void> => {
-    const blob = new Blob([exportLearning(await learner.snapshot())], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'aprendizado-de-redacao.json';
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadJson('aprendizado-de-redacao.json', exportLearning(await learner.snapshot()));
   }, [learner]);
 
   const total = Object.values(stats.counts).reduce((a, b) => a + b, 0);
