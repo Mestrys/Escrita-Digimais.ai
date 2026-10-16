@@ -3,6 +3,7 @@ import { DEFAULT_PROFILE } from '../config/language-profile';
 import { exportProfileJson } from '../config/profile-schema';
 import { DEFAULT_PREFERENCES, sanitizePreferences } from '../application/preferences';
 import { validateOverlay } from '../config/profile-overlay';
+import { emptyCounters, increment } from '../application/usage-counters';
 import { AppStorage, ALLOWED_KEYS } from '../infrastructure/storage';
 import { MemoryArea } from './memory-storage';
 
@@ -57,6 +58,7 @@ describe('persistência', () => {
     await s.savePreferences({ length: 'short' });
     const ov = validateOverlay({ schemaVersion: 1, overlayName: 'Equipe', forbiddenTerms: ['x'] });
     if (ov.ok) await s.saveOverlay(ov.overlay);
+    await s.saveCounters(increment(emptyCounters('2026-10-15'), 'copy'));
     expect(Object.keys(local.data).sort()).toEqual([...ALLOWED_KEYS].sort());
     await s.clearAll();
     expect(local.data).toEqual({});

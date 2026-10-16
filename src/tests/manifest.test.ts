@@ -38,7 +38,7 @@ describe('manifest.json', () => {
 
   it('o esquema de política gerenciada é JSON válido e não aceita segredos', () => {
     const schema = JSON.parse(readFileSync('public/managed-schema.json', 'utf8')) as { properties: Record<string, unknown> };
-    expect(Object.keys(schema.properties).sort()).toEqual(['aiProvider', 'languageProfile', 'profileSigningPublicKeys']);
+    expect(Object.keys(schema.properties).sort()).toEqual(['aiProvider', 'languageProfile', 'profileSigningPublicKeys', 'usageCounters']);
     expect(JSON.stringify(schema).toLowerCase()).not.toMatch(/apikey|api_key|token|secret|password/);
   });
 });

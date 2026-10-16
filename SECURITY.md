@@ -9,6 +9,7 @@
 | Persistência indevida de dados | Allowlist de chaves em `chrome.storage.local`; conteúdo vive só em memória; limpeza por inatividade e “Limpar tudo” |
 | Perfil institucional trocado por um adulterado (arquivo ou disco local) | Com `profileSigningPublicKeys` na política: só importa envelope assinado (ECDSA P-256, WebCrypto local), falha fechada sem assinatura válida e reverifica o perfil guardado a cada abertura; a chave privada fica fora da extensão e do repositório |
 | Camada de equipe afrouxando regras da organização | Mesclagem só restritiva (união de termos, menor tamanho, regras de encerramento mais rígidas); campos de estilo e de silenciamento de alertas são recusados; mesma validação de texto simples do perfil; revalidada a cada abertura |
+| Telemetria que vire vazamento de conteúdo | Contadores desligados por padrão; só inteiros em chaves de lista fechada (códigos de alerta limitados por formato e quantidade); valores adulterados são descartados na leitura; sem texto, sem marca de tempo por evento, sem rede; política `usageCounters` permite à organização desligar ou ligar |
 | Perfil importado malicioso (XSS, links de phishing, ReDoS, poluição de protótipo) | Validação estrita: só texto simples, sem HTML, URLs ou esquemas; chaves desconhecidas recusadas; termos escapados, nunca usados como regex; limite de 100 KB; React sem `innerHTML` |
 | Código remoto ou injetado | CSP `script-src 'self'`, sem CDN, sem `eval`/`new Function`, sem scripts inline; build com Vite sem polyfill inline |
 | Abuso de permissões | Somente `sidePanel` e `storage` |

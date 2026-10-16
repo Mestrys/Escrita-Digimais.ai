@@ -125,7 +125,7 @@ Desativado por padrão (opção mais segura). Para habilitar: `closureRules.noRe
 Em “Configurações > Perfil de linguagem”. A importação é local e recusa: JSON inválido, arquivo acima de 100 KB, chaves desconhecidas (inclusive `__proto__`), HTML, links, esquemas executáveis, caracteres de controle, placeholders não permitidos e valores fora de faixa. Termos são comparados como texto, nunca como expressão regular. A exportação gera o JSON do perfil efetivo.
 
 ### Política gerenciada (implantação empresarial)
-O esquema está em `public/managed-schema.json`. Exemplo de valor para a chave `languageProfile` (string JSON) via política do Edge (GPO/Intune, `3rdparty > extensions > <id> > policy`). A chave `profileSigningPublicKeys` (até duas chaves públicas ECDSA P-256, SPKI em base64) faz a extensão exigir perfil assinado: importação sem assinatura válida é recusada e o perfil guardado é reverificado a cada abertura. A chave `aiProvider` está reservada e não ativa nenhuma chamada nesta versão.
+O esquema está em `public/managed-schema.json`. Exemplo de valor para a chave `languageProfile` (string JSON) via política do Edge (GPO/Intune, `3rdparty > extensions > <id> > policy`). A chave `profileSigningPublicKeys` (até duas chaves públicas ECDSA P-256, SPKI em base64) faz a extensão exigir perfil assinado: importação sem assinatura válida é recusada e o perfil guardado é reverificado a cada abertura. A chave `usageCounters` (`off`, `optional` ou `on`; padrão `optional`) controla os contadores de uso agregados, sem conteúdo e só locais (ver PRIVACY.md). A chave `aiProvider` está reservada e não ativa nenhuma chamada nesta versão.
 
 ### Assinatura de perfil (opcional)
 ```
@@ -165,3 +165,4 @@ Campos aceitos: `forbiddenTerms`, `preferredTerms`, `requiredTexts`, `internalDo
 - Dados pessoais e de infraestrutura são mascarados na prévia (com aviso), mantendo o campo original intacto.
 - Credenciais e pedidos de credenciais bloqueiam geração e cópia.
 - Conteúdo nunca é persistido; limpeza por inatividade padrão de 15 minutos.
+- Contadores de uso são opt-in (ou definidos por política), apenas numéricos, em lista fechada de chaves, locais e exportáveis manualmente.
