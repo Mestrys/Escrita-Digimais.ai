@@ -97,4 +97,15 @@ describe('aprendizado de redação na interface', () => {
     await user.click(screen.getByRole('button', { name: /Configurações/ }));
     expect(screen.getByRole('button', { name: 'Exportar aprendizado' })).toBeTruthy();
   });
+
+  it('as configurações mostram a versão instalada quando o navegador a informa', async () => {
+    vi.stubGlobal('chrome', { runtime: { getManifest: () => ({ version: '9.8.7.6' }) } });
+    try {
+      const { user } = setup();
+      await user.click(screen.getByRole('button', { name: /Configurações/ }));
+      expect(screen.getByTestId('extension-version').textContent).toContain('9.8.7.6');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
 });

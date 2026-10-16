@@ -22,6 +22,8 @@ interface Props {
   onRemoveOverlay: () => void;
   usage: { enabled: boolean; locked: boolean; policy: UsagePolicy; total: number };
   learn: { enabled: boolean; locked: boolean; total: number };
+  /** Versão instalada, para o analista conferir se a atualização foi aplicada. */
+  version: string;
   onResetLearning: () => void;
   onExportLearning: () => void;
   onExportUsage: () => void;
@@ -48,7 +50,7 @@ const SOURCE_LABEL = { managed: 'política da organização', imported: 'arquivo
 
 export function SettingsPanel({
   prefs, onPrefs, profile, profileSource, onImport, onExport, onResetProfile, signingRequired, overlay, onImportOverlay, onRemoveOverlay,
-  usage, learn, onResetLearning, onExportLearning, onExportUsage, onResetUsage,
+  usage, learn, version, onResetLearning, onExportLearning, onExportUsage, onResetUsage,
 }: Props) {
   const [errors, setErrors] = useState<string[]>([]);
   const [done, setDone] = useState(false);
@@ -241,6 +243,11 @@ export function SettingsPanel({
         )}
         {overlayDone && <p role="status" className="panel ok">Camada da equipe importada e validada.</p>}
       </fieldset>
+      {version && (
+        <p className="subtle" data-testid="extension-version">
+          Versão da extensão: <strong>{version}</strong>. Ao instalar uma versão nova, ela substitui esta e mantém as suas preferências.
+        </p>
+      )}
     </section>
   );
 }

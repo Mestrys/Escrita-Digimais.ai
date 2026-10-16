@@ -7,6 +7,15 @@ Documento para decidir com a TI como a extensão chega aos analistas. Ele não e
 - Isso serve ao piloto com poucas pessoas. Para a equipe inteira tem três problemas: depende de uma configuração de desenvolvedor, não atualiza sozinho e cada máquina vira uma instalação manual.
 - A equipe usa o Edge **estável**.
 
+## 1.1 Atualização: o que cada opção faz
+| Opção | Atualiza sozinho? | Mantém as preferências? |
+|---|---|---|
+| A. Pasta (modo do desenvolvedor) | **Não.** Repetir o passo a passo de `docs/DESENVOLVIMENTO-EDGE.md` a cada versão | Sim, na mesma pasta e com o ID fixo do zip instalável |
+| B. Loja do Edge com instalação forçada | **Sim**, pela atualização da própria loja | Sim, o ID da loja é estável entre versões |
+| C. Hospedagem própria | Sim, se houver `update_url` e servidor | Sim, enquanto a chave não mudar |
+
+O zip instalável tem ID fixo (`khilafnebmdhmlpkajikadidlgbcepdn`); o zip da loja não tem chave e recebe outro ID da loja. Políticas por ID precisam usar o ID do canal escolhido.
+
 ## 2. Opções
 
 | Opção | Como funciona | Quando serve | Pontos de atenção |

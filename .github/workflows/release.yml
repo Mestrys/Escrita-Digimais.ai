@@ -67,12 +67,20 @@ jobs:
       - name: Empacotar extensão
         run: node scripts/package.mjs
 
-      - name: Conferir que o zip é reprodutível
+      - name: Conferir que os zips são reprodutíveis
         run: |
-          first="$(sha256sum release/*.zip | cut -d' ' -f1)"
+          first="$(sha256sum release/*.zip)"
           node scripts/package.mjs
-          second="$(sha256sum release/*.zip | cut -d' ' -f1)"
-          [ "$first" = "$second" ] || { echo "O zip não é reprodutível." >&2; exit 1; }
+          second="$(sha256sum release/*.zip)"
+          [ "$first" = "$second" ] || { echo "Os zips não são reprodutíveis." >&2; exit 1; }
+
+      - name: Conferir o pacote instalável (com chave) e o da loja (sem chave)
+        run: |
+          mkdir -p "$RUNNER_TEMP/instalavel" "$RUNNER_TEMP/loja"
+          unzip -q release/escrita-digimais.ai_v*[0-9].zip -d "$RUNNER_TEMP/instalavel"
+          unzip -q release/escrita-digimais.ai_v*_loja.zip -d "$RUNNER_TEMP/loja"
+          node scripts/verify-dist.mjs "$RUNNER_TEMP/instalavel" --com-chave
+          node scripts/verify-dist.mjs "$RUNNER_TEMP/loja"
 
       - name: Calcular SHA-256
         run: |
@@ -83,16 +91,20 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          zip="$(ls release/*.zip)"
-          sha="$(cut -d' ' -f1 release/SHA256SUMS.txt)"
+          install_zip="$(ls release/escrita-digimais.ai_v*[0-9].zip)"
+          store_zip="$(ls release/escrita-digimais.ai_v*_loja.zip)"
+          install_sha="$(grep -F "$(basename "$install_zip")" release/SHA256SUMS.txt | cut -d' ' -f1)"
+          store_sha="$(grep -F "$(basename "$store_zip")" release/SHA256SUMS.txt | cut -d' ' -f1)"
+          id="$(node -p "require('./scripts/extension-key.json').extensionId")"
           cat > notes.md <<NOTES
-          Pacote de instalação do Assistente de Textos do Service Desk, versão ${GITHUB_REF_NAME#v}, gerado do commit \`${GITHUB_SHA::7}\` da main.
+          Pacotes do Assistente de Textos do Service Desk, versão ${GITHUB_REF_NAME#v}, gerados do commit \`${GITHUB_SHA::7}\` da main.
 
-          **SHA-256 do zip:** \`${sha}\`
+          - **Instalável** (\`$(basename "$install_zip")\`): leva o ID fixo \`${id}\`. Instalar uma versão nova substitui a anterior e mantém as preferências, em qualquer pasta. SHA-256: \`${install_sha}\`
+          - **Loja** (\`$(basename "$store_zip")\`): sem chave, para envio à loja de extensões, que define o próprio ID. SHA-256: \`${store_sha}\`
 
-          Verifique o hash antes de instalar: \`sha256sum -c SHA256SUMS.txt\`. O zip é reprodutível: gerar o mesmo commit de novo produz o mesmo hash.
+          Verifique o hash antes de instalar: \`sha256sum -c SHA256SUMS.txt\`. Os zips são reprodutíveis: gerar o mesmo commit de novo produz os mesmos hashes.
 
-          Instalação para teste: extraia o zip em uma pasta fixa, abra \`edge://extensions\`, ative o modo do desenvolvedor e use "Carregar sem compactação". Instruções completas em \`docs/DESENVOLVIMENTO-EDGE.md\`. Requer Edge 116 ou superior.
+          Instalação para teste: extraia o zip instalável em uma pasta fixa, abra \`edge://extensions\`, ative o modo do desenvolvedor e use "Carregar sem compactação". Para atualizar, veja \`docs/DESENVOLVIMENTO-EDGE.md\`. Requer Edge 116 ou superior.
           NOTES
-          gh release create "$GITHUB_REF_NAME" "$zip" release/SHA256SUMS.txt \
+          gh release create "$GITHUB_REF_NAME" "$install_zip" "$store_zip" release/SHA256SUMS.txt \
             --title "Versão ${GITHUB_REF_NAME#v}" --notes-file notes.md --verify-tag

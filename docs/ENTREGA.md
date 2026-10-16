@@ -18,6 +18,7 @@ Assistente de Textos do Service Desk, versão 1.0.0.1. Extensão para Microsoft 
 
 ## Distribuição e releases
 - Como a equipe recebe a extensão (piloto manual, loja do Edge com instalação forçada, hospedagem própria): [DISTRIBUICAO.md](DISTRIBUICAO.md), com as decisões que cabem à TI.
+- Dois zips por versão: o **instalável** (ID fixo, uma versão nova substitui a anterior mantendo as preferências) e o da **loja** (sem chave). A versão instalada aparece em Configurações.
 - O zip é reprodutível e a release é publicada por tag (`.github/workflows/release.yml`), com SHA-256 e `SHA256SUMS.txt`.
 - O CI roda a demonstração e o ensaio do piloto em Chromium real contra o zip extraído.
 

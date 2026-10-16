@@ -28,6 +28,7 @@ import type {
 } from '../domain/types';
 import { copyText } from '../infrastructure/clipboard';
 import { AppStorage } from '../infrastructure/storage';
+import { extensionVersion } from '../infrastructure/extension';
 import { loadAiPolicy, loadSigningKeys, loadUsagePolicy } from '../infrastructure/policy';
 import { useStyleLearning } from './hooks/useStyleLearning';
 import { useUsageCounters } from './hooks/useUsageCounters';
@@ -650,6 +651,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
             onRemoveOverlay={() => void onRemoveOverlay()}
             usage={{ ...usage, policy: usagePolicy, total: usageCounters.total }}
             learn={{ enabled: learning.enabled, locked: learning.locked, total: learning.total }}
+            version={extensionVersion()}
             onResetLearning={() => void onResetLearning()}
             onExportLearning={() => void learning.exportFile()}
             onExportUsage={() => void usageCounters.exportFile()}

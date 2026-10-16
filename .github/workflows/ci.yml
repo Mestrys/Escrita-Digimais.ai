@@ -50,12 +50,20 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      - name: Conferir que o zip é reprodutível
+      - name: Conferir que os zips são reprodutíveis
         run: |
-          first="$(sha256sum release/*.zip | cut -d' ' -f1)"
+          first="$(sha256sum release/*.zip)"
           node scripts/package.mjs
-          second="$(sha256sum release/*.zip | cut -d' ' -f1)"
-          [ "$first" = "$second" ] || { echo "O zip não é reprodutível." >&2; exit 1; }
+          second="$(sha256sum release/*.zip)"
+          [ "$first" = "$second" ] || { echo "Os zips não são reprodutíveis." >&2; exit 1; }
+
+      - name: Conferir o pacote instalável (com chave) e o da loja (sem chave)
+        run: |
+          mkdir -p "$RUNNER_TEMP/instalavel" "$RUNNER_TEMP/loja"
+          unzip -q release/escrita-digimais.ai_v*[0-9].zip -d "$RUNNER_TEMP/instalavel"
+          unzip -q release/escrita-digimais.ai_v*_loja.zip -d "$RUNNER_TEMP/loja"
+          node scripts/verify-dist.mjs "$RUNNER_TEMP/instalavel" --com-chave
+          node scripts/verify-dist.mjs "$RUNNER_TEMP/loja"
 
   e2e:
     name: Extensão empacotada em Chromium real
@@ -84,8 +92,8 @@ jobs:
       - name: Extrair o pacote que seria publicado
         run: |
           mkdir -p "$RUNNER_TEMP/ext"
-          unzip -q release/*.zip -d "$RUNNER_TEMP/ext"
-          node scripts/verify-dist.mjs "$RUNNER_TEMP/ext"
+          unzip -q release/escrita-digimais.ai_v*[0-9].zip -d "$RUNNER_TEMP/ext"
+          node scripts/verify-dist.mjs "$RUNNER_TEMP/ext" --com-chave
 
       - name: Playwright (fora do lockfile, só para este job)
         run: |

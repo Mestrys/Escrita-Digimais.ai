@@ -1,14 +1,25 @@
-// Empacota dist/ em release/escrita-digimais.ai_v<versão>.zip usando o utilitário zip do sistema.
-// O zip é reprodutível: arquivos em ordem alfabética, datas fixas (SOURCE_DATE_EPOCH, padrão 01/01/2026 UTC),
-// sem atributos extras. Gerar duas vezes o mesmo commit produz o mesmo SHA-256.
+// Empacota dist/ em dois zips reprodutíveis em release/:
+//   escrita-digimais.ai_v<versão>.zip       INSTALÁVEL: o manifest leva a chave pública de scripts/extension-key.json, então o
+//                                           ID da extensão é sempre o mesmo, em qualquer pasta, e instalar uma versão nova
+//                                           substitui a anterior mantendo as preferências.
+//   escrita-digimais.ai_v<versão>_loja.zip  SEM chave, para envio à loja de extensões (a loja define o ID).
+// Reprodutível: arquivos em ordem alfabética, datas fixas (SOURCE_DATE_EPOCH, padrão 01/01/2026 UTC), sem atributos extras.
+// Gerar duas vezes o mesmo commit produz os mesmos SHA-256 (dado o mesmo utilitário zip).
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, readFileSync, readdirSync, rmSync, statSync, utimesSync } from 'node:fs';
+import { cpSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, utimesSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { extensionIdFromKey } from './extension-id.mjs';
 
 const { version } = JSON.parse(readFileSync('manifest.json', 'utf8'));
 const epoch = Number(process.env.SOURCE_DATE_EPOCH ?? 1767225600);
 if (!Number.isInteger(epoch) || epoch < 315532800) {
   console.error('SOURCE_DATE_EPOCH inválido (use segundos desde 1970, a partir de 1980).');
+  process.exit(1);
+}
+
+const keyFile = JSON.parse(readFileSync('scripts/extension-key.json', 'utf8'));
+if (extensionIdFromKey(keyFile.publicKey) !== keyFile.extensionId) {
+  console.error('scripts/extension-key.json: o ID registrado não corresponde à chave pública.');
   process.exit(1);
 }
 
@@ -26,14 +37,30 @@ function collect(dir, prefix = '') {
   return files;
 }
 
-const files = collect('dist');
+function zipDir(dir, out) {
+  const files = collect(dir);
+  rmSync(out, { force: true });
+  execFileSync('zip', ['-X', '-D', '-@', out], {
+    cwd: dir,
+    input: `${files.join('\n')}\n`,
+    env: { ...process.env, TZ: 'UTC' },
+    stdio: ['pipe', 'inherit', 'inherit'],
+  });
+  console.log(`Pacote criado: ${out}`);
+}
+
 mkdirSync('release', { recursive: true });
-const out = resolve('release', `escrita-digimais.ai_v${version}.zip`);
-rmSync(out, { force: true });
-execFileSync('zip', ['-X', '-D', '-@', out], {
-  cwd: 'dist',
-  input: `${files.join('\n')}\n`,
-  env: { ...process.env, TZ: 'UTC' },
-  stdio: ['pipe', 'inherit', 'inherit'],
-});
-console.log(`Pacote criado: ${out}`);
+
+// Instalável: cópia de dist/ com a chave pública no manifest.
+const stage = resolve('release', '.instalavel');
+rmSync(stage, { recursive: true, force: true });
+cpSync('dist', stage, { recursive: true });
+const manifest = JSON.parse(readFileSync(join(stage, 'manifest.json'), 'utf8'));
+const { manifest_version: mv, ...rest } = manifest;
+writeFileSync(join(stage, 'manifest.json'), JSON.stringify({ manifest_version: mv, key: keyFile.publicKey, ...rest }, null, 2) + '\n');
+zipDir(stage, resolve('release', `escrita-digimais.ai_v${version}.zip`));
+rmSync(stage, { recursive: true, force: true });
+
+// Loja: o dist/ como está, sem chave.
+zipDir('dist', resolve('release', `escrita-digimais.ai_v${version}_loja.zip`));
+console.log(`ID fixo do pacote instalável: ${keyFile.extensionId}`);
