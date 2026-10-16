@@ -120,6 +120,12 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
     setRestorable(null);
   }, []);
 
+  const clearReview = useCallback(() => {
+    setReviewForm((r) => ({ ...initialReviewForm(), type: r.type, recipient: r.recipient }));
+    setReviewResult(null);
+    setReviewProblem(null);
+  }, []);
+
   const clearContent = useCallback(() => {
     setForm((f) => ({ ...f, ...emptyContent(), variant: 0 }));
     setResult(null);
@@ -129,16 +135,15 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
     setShowDiff(false);
     setCopied('none');
     setUndo(null);
-    setReviewForm((r) => ({ ...initialReviewForm(), type: r.type, recipient: r.recipient }));
-    setReviewResult(null);
-    setReviewProblem(null);
-  }, []);
+    clearReview();
+  }, [clearReview]);
 
   // Limpeza por inatividade (configurável). O estado vive só em memória.
   useEffect(() => {
     if (!prefs.autoClearMinutes) return;
     const id = window.setTimeout(() => {
       clearContent();
+      setRestorable(null);
       setLive('Conteúdo limpo por inatividade.');
     }, prefs.autoClearMinutes * 60_000);
     return () => window.clearTimeout(id);
@@ -152,17 +157,28 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
   }, [restorable]);
 
   /** Limpeza pedida pelo analista: guarda o conteúdo em memória por pouco tempo para permitir desfazer. */
-  const manualClear = useCallback(() => {
-    const hasContent = Boolean(result) || TEXT_FORM_FIELDS.some((f) => form[f].trim()) || hasReviewContent(reviewForm);
-    if (!hasContent) {
-      clearContent();
-      return;
-    }
-    const saved: SavedContent = { form, result, text, initialText, review: reviewForm, reviewResult };
-    clearContent();
-    setRestorable(saved);
-    setLive('Conteúdo limpo. É possível desfazer por 30 segundos.');
-  }, [form, result, text, initialText, reviewForm, reviewResult, clearContent]);
+  /**
+   * Limpeza pedida pelo analista. O escopo "review" limpa só o modo de revisão e preserva o formulário de geração.
+   * Em ambos os casos o conteúdo anterior fica em memória por 30 segundos para "Desfazer limpeza".
+   */
+  const manualClear = useCallback(
+    (scope: 'all' | 'review' = 'all') => {
+      const reviewHasContent = hasReviewContent(reviewForm) || Boolean(reviewResult);
+      const hasContent =
+        scope === 'review' ? reviewHasContent : reviewHasContent || Boolean(result) || TEXT_FORM_FIELDS.some((f) => form[f].trim());
+      if (!hasContent) {
+        if (scope === 'all') clearContent();
+        setLive('Não há conteúdo para limpar.');
+        return;
+      }
+      const saved: SavedContent = { form, result, text, initialText, review: reviewForm, reviewResult };
+      if (scope === 'review') clearReview();
+      else clearContent();
+      setRestorable(saved);
+      setLive('Conteúdo limpo. É possível desfazer por 30 segundos.');
+    },
+    [form, result, text, initialText, reviewForm, reviewResult, clearContent, clearReview],
+  );
 
   const onRestore = (): void => {
     if (!restorable) return;
@@ -309,7 +325,8 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
 
   const onReviewChange = (patch: Partial<ReviewFormState>): void => {
     setReviewForm((r) => ({ ...r, ...patch }));
-    if ('text' in patch || 'type' in patch || 'recipient' in patch) setReviewResult(null);
+    // Todo campo alimenta o contexto da revisão: qualquer mudança deixa o resultado exibido desatualizado.
+    setReviewResult(null);
     setReviewProblem(null);
     touch();
   };
@@ -329,8 +346,11 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
   };
 
   const doClearAll = async (): Promise<void> => {
-    if (alsoClearStored) clearContent();
-    else manualClear();
+    if (alsoClearStored) {
+      // Apagar os dados armazenados também descarta a cópia em memória: nada pode ser restaurado depois.
+      clearContent();
+      setRestorable(null);
+    } else manualClear('all');
     if (alsoClearStored) {
       await store.clearAll();
       setPrefs(DEFAULT_PREFERENCES);
@@ -505,7 +525,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
             result={reviewResult}
             problem={reviewProblem}
             onReview={onReviewRun}
-            onClear={manualClear}
+            onClear={() => manualClear('review')}
           />
         ) : (
         <>
@@ -635,13 +655,13 @@ export function App({ storage, loadPolicy = loadAiPolicy, copy = copyText, provi
                 <button type="button" onClick={onVariant} disabled={busy}>Outra variação</button>
                 <button type="button" onClick={() => { setText(initialText); setSnapshot(null); touch(); }}>Restaurar modelo</button>
                 <button type="button" onClick={() => setShowDiff((s) => !s)} aria-pressed={showDiff}>Comparar com o texto inicial</button>
-                <button type="button" onClick={manualClear}>Limpar</button>
+                <button type="button" onClick={() => manualClear('all')}>Limpar</button>
               </div>
               {copied === 'ok' && (
                 <div role="status" className="panel ok">
                   <p>Texto copiado. Deseja limpar o conteúdo agora?</p>
                   <div className="row">
-                    <button type="button" onClick={manualClear}>Limpar agora</button>
+                    <button type="button" onClick={() => manualClear('all')}>Limpar agora</button>
                     <button type="button" onClick={() => setCopied('none')}>Manter</button>
                   </div>
                 </div>
