@@ -1,3 +1,5 @@
+import { DRAFT_CLASSES } from '../config/draft-rules';
+import type { DraftClass } from '../config/draft-rules';
 import { COMMUNICATION_TYPES, FORMALITIES } from '../domain/types';
 import type { PhraseChoices, PhraseSlot, PreferredIndexes } from '../domain/types';
 
@@ -48,8 +50,25 @@ function parseKey(key: string): { kind: LearnKind; slot: PhraseSlot; scope: stri
   return learnKey(kind, slot, scope, index) ? { kind, slot, scope, index } : null;
 }
 
+/** Correções do rascunho livre: de qual campo o trecho foi tirado e para qual foi (ou 'ignore' se descartado). */
+export type FixTarget = DraftClass | 'ignore';
+const FIX_TARGETS: readonly string[] = [...DRAFT_CLASSES, 'ignore'];
+const FIX_KEY = /^fix\.([a-z]+)\.([a-z]+)$/;
+
+export function fixKey(from: DraftClass, to: FixTarget): string | null {
+  return DRAFT_CLASSES.includes(from) && FIX_TARGETS.includes(to) && from !== to ? `fix.${from}.${to}` : null;
+}
+
+function parseFix(key: string): { from: DraftClass; to: FixTarget } | null {
+  const m = FIX_KEY.exec(key);
+  if (!m) return null;
+  const from = m[1] as DraftClass;
+  const to = m[2] as FixTarget;
+  return fixKey(from, to) ? { from, to } : null;
+}
+
 export function isLearnKey(key: string): boolean {
-  return parseKey(key) !== null;
+  return parseKey(key) !== null || parseFix(key) !== null;
 }
 
 /** Aceita somente chaves conhecidas e inteiros válidos. */
@@ -62,6 +81,43 @@ export function sanitizeStats(raw: unknown): LearnedStats {
     if (!isLearnKey(key)) continue;
     if (typeof value !== 'number' || !Number.isInteger(value) || value < 1) continue;
     out.counts[key] = Math.min(value, MAX_COUNT);
+  }
+  return out;
+}
+
+/** Soma 1 a uma correção do rascunho. Ao chegar ao limite, divide por dois todas as correções (esquecimento gradual). */
+export function recordFix(stats: LearnedStats, from: DraftClass, to: FixTarget): LearnedStats {
+  const key = fixKey(from, to);
+  if (!key) return stats;
+  const counts = { ...stats.counts, [key]: Math.min((stats.counts[key] ?? 0) + 1, MAX_COUNT) };
+  if ((counts[key] ?? 0) >= HALVE_AT) {
+    for (const k of Object.keys(counts)) {
+      if (parseFix(k)) {
+        const half = Math.floor((counts[k] ?? 0) / 2);
+        if (half < 1) delete counts[k];
+        else counts[k] = half;
+      }
+    }
+  }
+  return { version: 1, counts };
+}
+
+/**
+ * Viés por campo, a partir do saldo das correções (trechos que entraram no campo menos os que saíram dele).
+ * Só vale com saldo de pelo menos MIN_NET e é pequeno: serve para desempatar, nunca para anular as regras.
+ */
+export function draftBias(stats: LearnedStats): Partial<Record<DraftClass, number>> {
+  const net: Partial<Record<DraftClass, number>> = {};
+  for (const [k, v] of Object.entries(stats.counts)) {
+    const f = parseFix(k);
+    if (!f) continue;
+    net[f.from] = (net[f.from] ?? 0) - v;
+    if (f.to !== 'ignore') net[f.to] = (net[f.to] ?? 0) + v;
+  }
+  const out: Partial<Record<DraftClass, number>> = {};
+  for (const cls of DRAFT_CLASSES) {
+    const n = net[cls] ?? 0;
+    if (Math.abs(n) >= MIN_NET) out[cls] = Math.sign(n) * Math.min(Math.abs(n), 10) * 0.2;
   }
   return out;
 }
@@ -141,6 +197,17 @@ export class StyleLearner {
 
   setEnabled(enabled: boolean): void {
     this.enabled = enabled;
+  }
+
+  recordFixes(fixes: readonly [DraftClass, FixTarget][]): Promise<void> {
+    if (!this.enabled || fixes.length === 0) return Promise.resolve();
+    const task = this.chain.then(async () => {
+      let current = await this.io.load();
+      for (const [from, to] of fixes) current = recordFix(current, from, to);
+      await this.io.save(current);
+    });
+    this.chain = task.catch(() => undefined);
+    return task.catch(() => undefined);
   }
 
   record(events: readonly LearnEvent[]): Promise<void> {

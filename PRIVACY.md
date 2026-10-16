@@ -18,6 +18,7 @@ O processamento é local e determinístico. Os dados sensíveis detectados são 
 Somente em `chrome.storage.local`, neste navegador:
 - **Preferências**: nível técnico, formalidade, tamanho padrão, estilo de redação (natural ou estruturada) e tempo de limpeza automática.
 - **Aprendizado de redação** (opcional, desligado por padrão): contadores inteiros de qual redação pronta do produto (abertura, fecho, cortesia, frase de ligação) foi mantida ou trocada, em chaves de lista fechada (`acc.opening.pending.1`). Nunca guarda texto digitado, texto gerado, campos do chamado nem nomes. Fica só no navegador, é zerável em Configurações e é desligado quando a política gerenciada `usageCounters` é `off`.
+- **Rascunho livre**: a anotação colada fica apenas na tela e é descartada ao preencher, descartar, limpar ou fechar. Passa pela detecção de dados sensíveis antes de ser dividida. Com o aprendizado ligado, só são guardadas contagens do tipo `fix.<campo de origem>.<campo de destino>` (por exemplo `fix.result.action`), nunca o texto.
 - O **nome de quem recebe** o texto (campo opcional) é usado só na saudação, passa pela detecção de dados sensíveis e nunca é gravado.
 - **Perfil de linguagem importado** (opcional): textos institucionais validados, sem dados de chamados. Quando a organização exige assinatura, guarda também o valor da assinatura (texto, sem dados pessoais).
 - **Camada da equipe** (opcional): regras restritivas validadas (termos, limites), sem dados de chamados.

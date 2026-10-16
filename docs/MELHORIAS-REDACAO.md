@@ -61,7 +61,10 @@ Aprender com o conteúdo dos chamados é incompatível com as regras não negoci
 - Regras de escrita para qualquer redação nova: pt-BR, sem travessão, sem emoji, sem caixa alta, sem prazo, culpa ou promessa; fora dos encerramentos, nada que afirme solução sem pedir confirmação (as regras `resolution_claim` e `pending_without_expected_action` já pegaram duas frases minhas durante o desenvolvimento). O teste de variações percorre as 64 combinações de todos os tipos e formalidades, para destinatário usuário e gestor.
 - O limite de 10 redações por ponto vem do aprendizado (`MAX_INDEX`); o perfil da organização aceita até 6 fechos.
 
+## 3.3 Opção B: implementada (autorizada), com ressalva sobre os dados
+Rascunho livre: o analista cola a anotação, confere a divisão sugerida e só então os campos são preenchidos. Regras mais um classificador pequeno embarcado. Detalhes, medida e limites em [AVALIACAO-RASCUNHO.md](AVALIACAO-RASCUNHO.md). Como não existem anotações reais anonimizadas, o modelo foi treinado em exemplos fictícios; a taxa de acerto em produção é desconhecida e será medida no piloto pelas correções dos analistas.
+
 ## 4. Decisões que cabem ao usuário
 - D-IA-1: opção A aprovada e implementada (seção 3.1).
-- D-IA-2: autorizar o uso de amostras reais anonimizadas para treinar a opção B.
+- D-IA-2: opção B autorizada e implementada com dados fictícios; falta fornecer (ou autorizar a coleta de) anotações reais anonimizadas para melhorar o modelo.
 - D-IA-3: manter a opção C fora do escopo (recomendado).

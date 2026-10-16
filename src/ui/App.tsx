@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { emptyContent, initialForm, TEXT_FORM_FIELDS, toGenerationInput } from '../application/form';
 import type { FormState, TextFormField } from '../application/form';
 import { DEFAULT_PREFERENCES } from '../application/preferences';
-import { acceptedEvents, emptyStats, preferredIndexes, rejectedEvents, StyleLearner } from '../application/style-learning';
+import { acceptedEvents, draftBias, emptyStats, preferredIndexes, rejectedEvents, StyleLearner } from '../application/style-learning';
 import type { LearnedStats } from '../application/style-learning';
 import {
   effectiveUsageMode, exportCounters, generationKeys, timeBucket, UsageRecorder,
@@ -33,6 +33,8 @@ import { copyText } from '../infrastructure/clipboard';
 import { AppStorage } from '../infrastructure/storage';
 import { loadAiPolicy, loadSigningKeys, loadUsagePolicy } from '../infrastructure/policy';
 import { DiffView } from './components/DiffView';
+import { DraftPanel } from './components/DraftPanel';
+import type { DraftFields } from '../domain/draft';
 import { FieldControl } from './components/FieldControl';
 import type { Requirement } from './components/FieldControl';
 import { QualityPanel, WarningsList } from './components/ReviewPanel';
@@ -98,6 +100,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
   const [usagePolicy, setUsagePolicy] = useState<UsagePolicy>('optional');
   const [usageTotal, setUsageTotal] = useState(0);
   const [learned, setLearned] = useState<LearnedStats>(emptyStats);
+  const [draftKey, setDraftKey] = useState(0);
   const [result, setResult] = useState<GenerationResult | null>(null);
   const [text, setText] = useState('');
   const [initialText, setInitialText] = useState('');
@@ -202,6 +205,7 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
   }, []);
 
   const clearContent = useCallback(() => {
+    setDraftKey((k) => k + 1);
     setForm((f) => ({ ...f, ...emptyContent(), variant: 0 }));
     setResult(null);
     setText('');
@@ -508,6 +512,26 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
     URL.revokeObjectURL(url);
   };
 
+  const applyDraft = (fields: DraftFields): void => {
+    const keyOf: Record<keyof DraftFields, TextFormField> = {
+      summary: 'summary', actions: 'actions', observedResult: 'observedResult', pendingItem: 'pendingItem',
+      expectedAction: 'expectedAction', questions: 'questions', notes: 'notes',
+    };
+    setForm((f) => {
+      const next = { ...f };
+      for (const [k, value] of Object.entries(fields) as [keyof DraftFields, string][]) {
+        const name = keyOf[k];
+        const current = next[name].trim();
+        // Nunca sobrescreve: se o campo já tem texto, o novo conteúdo entra depois, em outra linha.
+        if (!current) next[name] = value;
+        else if (!current.includes(value)) next[name] = `${current}\n${value}`;
+      }
+      return next;
+    });
+    touch();
+    setLive('Campos preenchidos a partir da anotação. Revise e ajuste antes de gerar.');
+  };
+
   const onResetLearning = async (): Promise<void> => {
     await learner.snapshot();
     await store.resetLearning();
@@ -711,6 +735,15 @@ export function App({ storage, loadPolicy = loadAiPolicy, loadKeys = loadSigning
           </div>
 
           <h2>2. Contexto</h2>
+          <DraftPanel
+            key={draftKey}
+            available={new Set<ContextField>([...fields.main, ...fields.advanced])}
+            internalDomains={profile.internalDomains}
+            bias={learning.enabled ? draftBias(learned) : {}}
+            onApply={applyDraft}
+            onEvent={(e) => void recorder.record(e)}
+            onFixes={(fixes) => { void learner.recordFixes(fixes).then(() => learner.snapshot()).then(setLearned); }}
+          />
           {fields.main.map(renderField)}
           <details>
             <summary>Campos opcionais</summary>

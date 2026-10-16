@@ -151,7 +151,7 @@ export function SettingsPanel({
         <legend className="legend">Aprender minhas preferências de redação (opcional)</legend>
         <p className="subtle">
           Quando ligado, a extensão passa a mostrar primeiro as aberturas, fechos e frases de ligação que você mantém e
-          a evitar as que você troca. Guarda apenas números (qual das redações prontas foi usada), nunca o que você
+          a evitar as que você troca. Também aprende com as correções que você faz ao dividir uma anotação livre. Guarda apenas números (qual das redações prontas foi usada, ou de qual campo para qual um trecho foi movido), nunca o que você
           digita nem o texto gerado. Fica somente neste navegador e você pode zerar a qualquer momento.
         </p>
         {learn.locked ? (

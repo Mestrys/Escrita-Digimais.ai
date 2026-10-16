@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  acceptedEvents, emptyStats, isLearnKey, MIN_NET, preferredIndexes, recordEvent, rejectedEvents, sanitizeStats, StyleLearner,
+  acceptedEvents, draftBias, emptyStats, isLearnKey, MIN_NET, preferredIndexes, recordEvent, recordFix, rejectedEvents, sanitizeStats, StyleLearner,
 } from '../application/style-learning';
 import type { LearnedStats } from '../application/style-learning';
 import { MemoryArea } from './memory-storage';
@@ -153,5 +153,51 @@ describe('efeito no motor', () => {
     );
     expect(r.blocked || r.warnings.some((w) => w.code.startsWith('sensitive_'))).toBe(true);
     if (r.blocked) expect(r.choices).toBeUndefined();
+  });
+});
+
+describe('correções do rascunho livre', () => {
+  it('chaves de correção são fechadas: só campos conhecidos e nunca de um campo para ele mesmo', () => {
+    expect(isLearnKey('fix.result.action')).toBe(true);
+    expect(isLearnKey('fix.summary.ignore')).toBe(true);
+    for (const bad of ['fix.action.action', 'fix.notes.action', 'fix.action.notes', 'fix.x.y', 'fix.ignore.action', 'fix.action', 'fix.result.action.1']) {
+      expect(isLearnKey(bad)).toBe(false);
+    }
+  });
+
+  it('o viés só aparece com saldo mínimo, favorece o destino e desfavorece a origem', () => {
+    let s = emptyStats();
+    for (let i = 0; i < MIN_NET - 1; i++) s = recordFix(s, 'result', 'action');
+    expect(draftBias(s)).toEqual({});
+    s = recordFix(s, 'result', 'action');
+    const b = draftBias(s);
+    expect(b.action).toBeCloseTo(0.6);
+    expect(b.result).toBeCloseTo(-0.6);
+  });
+
+  it('descartar um trecho só desfavorece a origem e o viés é limitado', () => {
+    let s = emptyStats();
+    for (let i = 0; i < 30; i++) s = recordFix(s, 'summary', 'ignore');
+    const b = draftBias(s);
+    expect(b.summary).toBeLessThanOrEqual(0);
+    expect(Math.abs(b.summary ?? 0)).toBeLessThanOrEqual(2);
+    expect(b.action).toBeUndefined();
+  });
+
+  it('esquece gradualmente ao chegar ao limite', () => {
+    let s = emptyStats();
+    for (let i = 0; i < 60; i++) s = recordFix(s, 'result', 'action');
+    expect(s.counts['fix.result.action']).toBe(30);
+  });
+
+  it('o aprendiz grava as correções só quando ligado', async () => {
+    const local = new MemoryArea();
+    const store = new AppStorage(local, new MemoryArea());
+    const learner = new StyleLearner({ load: () => store.loadLearning(), save: (x) => store.saveLearning(x) });
+    await learner.recordFixes([['result', 'action']]);
+    expect(await local.get(null)).toEqual({});
+    learner.setEnabled(true);
+    await learner.recordFixes([['result', 'action'], ['pending', 'ignore']]);
+    expect((await learner.snapshot()).counts).toEqual({ 'fix.result.action': 1, 'fix.pending.ignore': 1 });
   });
 });

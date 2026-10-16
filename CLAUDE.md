@@ -9,6 +9,8 @@ Extensão MV3 para Microsoft Edge que gera sugestões de texto para chamados de 
 - `src/infrastructure`: chrome.storage, clipboard, sidePanel, service worker, política gerenciada.
 - `src/ui`: React (painel lateral e popup). Só orquestra; regra de negócio fica no domínio.
 
+- Rascunho livre (`domain/draft.ts`, regras em `config/draft-rules.ts`, modelo em `config/draft-model.json`): só sugere campos; o analista confere antes de preencher; o texto colado nunca é persistido. O modelo é regenerado do corpus fictício com `UPDATE_MODEL=1 npx vitest run src/tests/draft-model.test.ts`. Mudou regra ou corpus? Rode a medida em `src/tests/draft.test.ts` e atualize `docs/AVALIACAO-RASCUNHO.md`.
+
 ## Comandos de verificação
 ```
 npm run check        # lint + typecheck + testes + build + verify:dist + build:dev
@@ -31,7 +33,7 @@ Atualizar snapshots de template só quando a mudança de texto for intencional: 
 ## Restrições de segurança (não negociáveis)
 - Permissões: apenas `sidePanel` e `storage`. Nada de host_permissions, content_scripts, tabs ou clipboardWrite.
 - Sem `fetch`, XHR, WebSocket, sendBeacon, `eval`, `new Function`, CDN ou script inline (ESLint e testes bloqueiam).
-- Persistir apenas preferências (allowlist em `application/preferences.ts`), perfil validado, contadores numéricos opt-in (`application/usage-counters.ts`, lista fechada de chaves) e o aprendizado de redação opt-in (`application/style-learning.ts`: só `acc|rej` + ponto + escopo + índice, inteiros). O aprendizado só muda qual redação pronta vem primeiro; nunca afeta bloqueios, alertas ou política. Nunca conteúdo de chamado.
+- Persistir apenas preferências (allowlist em `application/preferences.ts`), perfil validado, contadores numéricos opt-in (`application/usage-counters.ts`, lista fechada de chaves) e o aprendizado de redação opt-in (`application/style-learning.ts`: só `acc|rej` + ponto + escopo + índice, inteiros). O aprendizado só muda qual redação pronta vem primeiro (e, no rascunho livre, desempata a sugestão de campo com chaves `fix.<origem>.<destino>`); nunca afeta bloqueios, alertas ou política. Nunca conteúdo de chamado.
 - Credenciais, tokens e chaves bloqueiam a geração; demais dados sensíveis são mascarados com aviso.
 - Perfil importado: só texto simples validado por `config/profile-schema.ts`; termos nunca viram regex. Com `profileSigningPublicKeys` na política, só vale perfil assinado (`application/profile-signing.ts`); chave privada nunca no repositório. Camada de equipe (`config/profile-overlay.ts`) só restringe: toda regra nova de mesclagem precisa de teste provando que não afrouxa.
 - Nenhum segredo ou chave de API no repositório. Provedor remoto permanece desativado.

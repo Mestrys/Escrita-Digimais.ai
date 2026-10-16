@@ -23,6 +23,8 @@ export const FIXED_KEYS: readonly string[] = [
   'copy',
   'variant',
   'review_again',
+  'draft_split',
+  'draft_apply',
   ...TIME_BUCKETS.map((b) => `time_to_copy.${b}`),
 ];
 
