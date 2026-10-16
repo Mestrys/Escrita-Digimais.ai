@@ -168,6 +168,34 @@ export const PROMISE_RULES: LexicalRule[] = [
     message: 'Promessa de resultado sem base no contexto informado.',
     suggestion: 'Prefira "seguimos com a análise" ou descreva apenas o próximo passo concreto.',
   },
+  {
+    code: 'implicit_commitment',
+    pattern: new RegExp(
+      [
+        '\\bvamos (?:resolver|corrigir|solucionar|normalizar|consertar)\\b',
+        '\\bvai (?:voltar ao normal|funcionar|ficar (?:tudo )?(?:bem|normal|certo|resolvido))',
+        '\\b(?:n[ãa]o|nunca) (?:vai|ir[áa]) (?:mais )?(?:ocorrer|acontecer|se repetir|voltar a (?:ocorrer|acontecer))',
+        '\\b(?:n[ãa]o|nunca) (?:ocorrer[áa]|acontecer[áa]) (?:mais|novamente|de novo)',
+        '\\bnunca mais\\b',
+        'n[ãa]o se repetir[áa]',
+        '\\b(?:fique|pode ficar|podem ficar) tranquil[oa]s?\\b',
+        // Só garantias futuras ou enfáticas: o relato de algo que já aconteceu ("realizamos a manutenção sem impacto") não alerta.
+        '\\b(?:ser[áa]|ficar[áa]|vai ser|vai ficar)(?: \\p{L}+){0,2} sem (?:nenhum |qualquer )?(?:impacto|risco|custo adicional|perda de dados)',
+        '\\bsem (?:nenhum|qualquer) (?:impacto|risco|custo adicional|perda de dados)',
+        'n[ãa]o haver[áa] (?:novos? )?(?:problemas|impacto|indisponibilidade|falhas|perda)',
+        '\\bser[áa] priorizad\\w*',
+        'prioridade (?:m[áa]xima|total|absoluta)',
+        'tratad[oa]s? com prioridade',
+      ].join('|'),
+      i,
+    ),
+    severity: 'warning',
+    dimension: 'safety',
+    penalty: 15,
+    message: 'Compromisso ou garantia implícita que o contexto informado não sustenta.',
+    suggestion:
+      'Descreva apenas o que foi feito e o próximo passo concreto. Se houver compromisso real, registre-o no campo próprio, como o prazo informado.',
+  },
 ];
 
 export const CERTAINTY_RULES: LexicalRule[] = [
