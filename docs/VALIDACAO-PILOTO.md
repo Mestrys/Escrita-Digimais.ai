@@ -64,9 +64,30 @@ node scripts/analyze-usage.mjs pasta/*.json
 
 O resumo traz taxa de bloqueio, cópias por geração, variações, revisões, tipos mais usados, alertas mais frequentes e tempo até copiar, além de dizer quem atende ao corte (padrão: 30 gerações e 14 dias por pessoa; ajustável com `--min-geracoes` e `--min-dias`).
 
+### Ensaio ponta a ponta antes de ligar o piloto
+Para provar que a cadeia funciona no seu ambiente, antes de convidar o grupo:
+
+```
+npm run build
+node scripts/pilot-rehearsal.mjs dist ensaio-piloto
+node scripts/analyze-usage.mjs ensaio-piloto/contadores-de-uso.json
+```
+
+O ensaio abre a extensão em Chromium, confirma que os contadores nascem desligados, liga, gera, copia, pede outra variação, provoca um bloqueio, exporta o arquivo e confere que nenhum texto digitado nem token foi guardado. Os dados do ensaio são fictícios e **não contam como dados de piloto**. Requer o Playwright (`PLAYWRIGHT_MODULE` pode apontar para o módulo).
+
+### Política do piloto
+Para ligar os contadores de todo o grupo sem depender de cada pessoa, defina a política `usageCounters` com o valor `on` (ou `optional`, que deixa a escolha com o analista e começa desligado). No Edge, a política da extensão fica em `3rdparty > extensions > <ID da extensão> > policy`, como descrito no README; no registro do Windows, o caminho equivalente é `HKLM\SOFTWARE\Policies\Microsoft\Edge\3rdparty\Extensions\<ID>\policy`, com o valor de texto `usageCounters`. Esse caminho não foi testado aqui: confirme na documentação do Edge e valide em uma máquina de teste. Com `on`, a opção some das Configurações e o texto informa que a organização ligou os contadores, o que deve constar do aviso aos participantes.
+
+Texto sugerido para o convite (ajuste ao seu canal): "A extensão passa a contar, neste navegador, quantos textos de cada tipo você gera, quantos são bloqueados, quantas vezes copia e em que faixa de tempo. Não guarda o que você escreve nem identifica chamados ou pessoas. No fim, você exporta o arquivo e o entrega. Pode desligar ou zerar quando quiser, se a política permitir."
+
 ## 5. Como decidir D8 e D9
 - Decida só com os arquivos que atendem ao corte e registre os excluídos.
 - Alerta frequente que a maioria ignora: candidato a rebaixar de gravidade ou ajustar a regra.
 - Tipo com muitas variações e poucas cópias: o modelo desse tipo precisa de revisão.
 - Taxa de bloqueio alta por um único motivo: olhar a regra do detector com o corpus de avaliação (`docs/AVALIACAO.md`) antes de mexer.
 - Tempo até copiar sempre na faixa de menos de 1 minuto: pode indicar que o texto não está sendo lido; reforçar a orientação de revisar antes de copiar.
+
+## 6. O que o piloto não consegue provar
+- **D8 (inserir o texto no sistema de chamados):** os contadores medem tentativas, cópias e o tempo entre gerar e copiar. Eles **não medem** o tempo gasto colando, nem o atrito no sistema de chamados. Para decidir D8 é preciso também a tabela de formato (seção 2) e as respostas de feedback sobre colar. Se o atrito de colar não aparecer como principal custo em pelo menos quatro semanas de uso, mantenha D8 adiado. Se aparecer, o caminho mais estreito é `activeTab` com `scripting`, só no clique, e isso quebra a regra de permissões (somente `sidePanel` e `storage`): exige revisão de segurança própria.
+- **D9 (IA por gateway corporativo):** nenhum número do piloto basta. Antes de qualquer decisão são necessários: gateway existente, parecer jurídico e de proteção de dados, mascaramento antes do envio, consentimento organizacional, desligamento por política e nenhuma chave na extensão. O corpus de avaliação (`docs/AVALIACAO.md`) serve para comparar o motor local com o assistido.
+- **Amostra pequena:** com menos de 30 gerações por pessoa ou menos de 14 dias, o analisador recusa o corte de propósito. Estender o piloto é melhor que decidir com pouca base.
