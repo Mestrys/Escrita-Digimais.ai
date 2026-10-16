@@ -53,5 +53,8 @@ Limites do experimento: 7 casos, sem GPU, sem o Aion-1.0-Instruct, sem modelos d
 - Antes de qualquer código da opção 3: o analista testar o texto-base e a sugestão do Edge Canary/Dev (ou da Aion) em 10 chamados reais e marcar quantos ficaram melhores. Critério de entrada: pelo menos 7 em 10 melhores e nenhum com sentido alterado.
 - Se o piloto rodar em Edge estável, a opção 3 não ajuda ninguém ainda; vale então concentrar tudo na prosa determinística.
 
+## 4.1 Decisão (16/10/2026)
+A equipe usa o **Microsoft Edge estável**. Segundo a documentação do Edge (atualizada em 06/10/2026), a Prompt API e as APIs Writer e Rewriter continuam em prévia só nos canais Canary e Dev. Portanto o recurso opcional "Sugerir reescrita" (opção 3) **não funcionaria hoje para ninguém da equipe** e fica adiado. Todo o esforço de naturalidade segue na prosa determinística. Reavaliar quando a API chegar ao Edge estável ou se a equipe adotar um canal de pré-lançamento.
+
 ## 5. Como reproduzir
 Os scripts e as saídas brutas estão em `scripts/estudo-ia/` (`rodar_reescrita.py`, `rodar_geracao.py`, `fatos.json`, `rascunhos.json`, `saidas-dos-modelos.json`). Requer Python, `torch` (CPU) e `transformers`; baixa os modelos da Hugging Face. Rode fora do pacote da extensão: nada disso entra no zip.

@@ -71,6 +71,9 @@ Motivada pelo estudo de IA ([ESTUDO-IA-EMBARCADA.md](ESTUDO-IA-EMBARCADA.md)): o
 - **Parágrafos**: seções de fatos (contexto, ações feitas, resultado) formam um parágrafo e as de próximos passos (pendência, ações planejadas, ação esperada) outro; listas numeradas continuam em bloco próprio.
 - **Limite conhecido**: os rótulos ainda aparecem dentro dos parágrafos ("O que observamos: ..."). Fragmentos soltos ("Conexão ok no nosso teste") não podem ser reescritos em frase completa sem interpretar o texto, e isso só um modelo faria, com o risco medido no estudo.
 
+## 3.5 Decisão sobre IA embutida
+Edge estável em uso: a IA embutida do Edge (ainda em prévia nos canais Canary e Dev) fica fora do escopo. Ver `docs/ESTUDO-IA-EMBARCADA.md`, seção 4.1.
+
 ## 4. Decisões que cabem ao usuário
 - D-IA-1: opção A aprovada e implementada (seção 3.1).
 - D-IA-2: opção B autorizada e implementada com dados fictícios; falta fornecer (ou autorizar a coleta de) anotações reais anonimizadas para melhorar o modelo.
